@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
+            
+            // Tambahkan baris ini untuk menyambungkan profil ke akun login
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            
             $table->string('name');
             $table->string('phone_number')->unique();
             $table->text('address')->nullable();
