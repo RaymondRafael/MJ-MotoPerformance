@@ -16,16 +16,26 @@
                     <i class="fas fa-search"></i>
                 </button>
             </form>
+
+            <a href="{{ route('admin.customers.create') }}" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
+                <i class="fas fa-plus mr-1"></i> Tambah
+            </a>
         </div>
     </div>
 
     @if(session('success'))
-    <div class="m-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded">
+    <div class="m-6 mb-0 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded">
         {{ session('success') }}
     </div>
     @endif
 
-    <div class="overflow-x-auto">
+    @if(session('error'))
+    <div class="m-6 mb-0 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">
+        {{ session('error') }}
+    </div>
+    @endif
+
+    <div class="overflow-x-auto mt-6">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-white border-b border-gray-100 text-xs uppercase text-gray-500">

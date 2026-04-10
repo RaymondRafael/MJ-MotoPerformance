@@ -29,6 +29,12 @@
         {{ session('success') }}
     </div>
     @endif
+    
+    @if(session('error'))
+    <div class="m-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">
+        {{ session('error') }}
+    </div>
+    @endif
 
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -60,10 +66,11 @@
                             @csrf
                             @method('PUT')
                             <select name="status" onchange="this.form.submit()" class="text-xs font-bold rounded-lg border-gray-200 px-3 py-2 bg-white shadow-sm focus:ring-red-500 focus:border-red-500 cursor-pointer
-                                {{ $service->status == 'pending' ? 'text-yellow-600' : ($service->status == 'processing' ? 'text-blue-600' : 'text-green-600') }}">
+                                {{ $service->status == 'pending' ? 'text-yellow-600' : ($service->status == 'processing' ? 'text-blue-600' : ($service->status == 'finished' ? 'text-green-600' : 'text-purple-600')) }}">
                                 <option value="pending" {{ $service->status == 'pending' ? 'selected' : '' }}>Menunggu</option>
                                 <option value="processing" {{ $service->status == 'processing' ? 'selected' : '' }}>Dikerjakan</option>
                                 <option value="finished" {{ $service->status == 'finished' ? 'selected' : '' }}>Selesai</option>
+                                <option value="lunas" {{ $service->status == 'lunas' ? 'selected' : '' }}>Lunas</option>
                             </select>
                         </form>
                     </td>

@@ -92,64 +92,80 @@ class ServiceController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
+        // 1. Tambahkan 'lunas' ke dalam aturan validasi
         $request->validate([
-            'status' => 'required|in:pending,processing,finished,canceled'
+            'status' => 'required|in:pending,processing,finished,canceled,lunas'
         ]);
 
-        // Gunakan eager loading untuk memastikan data pelanggan terbawa
         $service = Service::with('vehicle.customer')->findOrFail($id);
         $service->status = $request->status;
         $service->save();
 
-        // LOGIKA WHATSAPP GATEWAY (API FONNTE)
-        // Hanya dikirim jika status berubah menjadi 'finished' (Selesai)
+        $customerName = $service->vehicle->customer->name;
+        $customerPhone = $service->vehicle->customer->phone_number;
+        $platNomor = $service->vehicle->license_plate;
+        
+        // LOGIKA WA 1: Jika status diubah menjadi "SELESAI" (Minta Ambil Motor)
         if ($request->status == 'finished') {
             
-            $customerName = $service->vehicle->customer->name;
-            $customerPhone = $service->vehicle->customer->phone_number;
-            $platNomor = $service->vehicle->license_plate;
             $motor = $service->vehicle->brand . ' ' . $service->vehicle->model;
             $totalBiaya = 'Rp ' . number_format($service->total_cost, 0, ',', '.');
 
-            // Format Pesan WhatsApp (Gunakan * untuk cetak tebal)
             $pesan = "Halo *{$customerName}*,\n\n";
             $pesan .= "Pengerjaan servis untuk kendaraan bermotor *{$platNomor}* ({$motor}) Anda di MJ MotoPerformance telah *SELESAI* dikerjakan.\n\n";
             $pesan .= "Total Tagihan: *{$totalBiaya}*\n\n";
-            $pesan .= "Silakan datang ke bengkel kami untuk melakukan pengecekan dan pengambilan kendaraan.\n\n";
+            $pesan .= "Silakan datang ke bengkel kami untuk melakukan pembayaran dan pengambilan kendaraan.\n\n";
             $pesan .= "Terima kasih telah mempercayakan kendaraan Anda kepada kami! 🙏";
 
-            // Mengirim Request (Tembak API) ke Server Fonnte
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => env('FONNTE_TOKEN') // Mengambil token dari .env
-                ])->post('https://api.fonnte.com/send', [
-                    'target' => $customerPhone, // Nomor WA tujuan
-                    'message' => $pesan,
-                    'countryCode' => '62', // Otomatis mengubah angka 0 di depan jadi +62
-                ]);
+            return $this->kirimWhatsApp($customerPhone, $pesan, 'Status selesai! Notifikasi WhatsApp untuk pengambilan kendaraan berhasil dikirim.');
+        }
+        
+        // LOGIKA WA 2: Jika status diubah menjadi "LUNAS" (Ucapan Terima Kasih)
+        elseif ($request->status == 'lunas') {
+            
+            $pesan = "Halo *{$customerName}*,\n\n";
+            $pesan .= "Terima kasih atas pembayaran servis kendaraan *{$platNomor}* Anda di MJ MotoPerformance. Tagihan Anda telah dinyatakan *LUNAS*.\n\n";
+            $pesan .= "Semoga kendaraan Anda selalu dalam kondisi prima. Hati-hati di jalan dan sampai jumpa di servis berikutnya! 🏍️💨";
 
-                // Mengecek apakah Fonnte berhasil mengirim
-                if ($response->successful()) {
-                    return redirect()->back()->with('success', 'Status selesai! Notifikasi WhatsApp berhasil dikirim ke pelanggan.');
-                } else {
-                    return redirect()->back()->with('error', 'Status selesai, namun gagal mengirim WhatsApp. Pastikan Device Fonnte terkoneksi.');
-                }
-            } catch (\Exception $e) {
-                // Jika server Fonnte sedang down atau tidak ada internet
-                return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mencoba mengirim WhatsApp: ' . $e->getMessage());
-            }
+            return $this->kirimWhatsApp($customerPhone, $pesan, 'Pembayaran Lunas! Ucapan terima kasih berhasil dikirim ke WhatsApp pelanggan.');
         }
 
-        // Jika status yang dipilih bukan 'finished' (misal: 'processing'), cukup tampilkan pesan biasa
+        // Jika status yang dipilih 'pending' atau 'processing', cukup tampilkan pesan biasa
         return redirect()->back()->with('success', 'Status pengerjaan kendaraan berhasil diperbarui!');
     }
 
     /**
-     * Form Edit Servis (Opsional untuk jaga-jaga)
+     * FUNGSI BANTUAN (Helper) UNTUK MENGIRIM WA AGAR KODE LEBIH RAPI
+     */
+    private function kirimWhatsApp($phone, $pesan, $successMessage)
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => env('FONNTE_TOKEN') 
+            ])->post('https://api.fonnte.com/send', [
+                'target' => $phone,
+                'message' => $pesan,
+                'countryCode' => '62',
+            ]);
+
+            if ($response->successful()) {
+                return redirect()->back()->with('success', $successMessage);
+            } else {
+                return redirect()->back()->with('error', 'Status tersimpan, namun gagal mengirim WhatsApp. Pastikan Device Fonnte terkoneksi.');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mencoba mengirim WhatsApp: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Form Edit Servis (Disesuaikan dengan tampilan baru)
      */
     public function edit($id)
     {
-        $service = Service::findOrFail($id);
+        // Load relasi vehicle.customer agar nama dan plat bisa ditampilkan di form edit
+        $service = Service::with('vehicle.customer')->findOrFail($id);
+        
         $vehicles = Vehicle::with('customer')->get();
         $mechanics = Mechanic::all();
         
@@ -157,13 +173,25 @@ class ServiceController extends Controller
     }
 
     /**
-     * Menyimpan perubahan Edit Servis
+     * Menyimpan perubahan Edit Servis (Tanpa Catatan Mekanik)
      */
     public function update(Request $request, $id)
     {
+        // 1. Validasi input (Hanya Keluhan dan Mekanik)
+        $request->validate([
+            'complaint' => 'required|string',
+            'mechanic_id' => 'nullable|exists:mechanics,id',
+        ]);
+
         $service = Service::findOrFail($id);
-        $service->update($request->all());
-        return redirect()->route('admin.services.index')->with('success', 'Data servis berhasil diperbarui!');
+
+        // 2. Simpan Perubahan
+        $service->update([
+            'complaint' => $request->complaint,
+            'mechanic_id' => $request->mechanic_id,
+        ]);
+
+        return redirect()->route('admin.services.index')->with('success', 'Informasi servis berhasil diperbarui!');
     }
 
     /**

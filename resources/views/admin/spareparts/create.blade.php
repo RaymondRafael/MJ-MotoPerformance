@@ -29,12 +29,6 @@
             </div>
         </div>
 
-        <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">Deskripsi Keterangan</label>
-            <textarea name="description" rows="3" placeholder="Opsional..."
-                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-red-500 focus:border-red-500 transition"></textarea>
-        </div>
-
         <div class="flex justify-end gap-4 pt-4 border-t mt-8">
             <a href="{{ route('admin.spareparts.index') }}" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition">Batal</a>
             <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition shadow-lg shadow-red-500/30">Simpan Data</button>
