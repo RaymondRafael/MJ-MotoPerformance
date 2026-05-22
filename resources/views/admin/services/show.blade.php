@@ -116,12 +116,12 @@
     <div class="lg:col-span-2 space-y-6">
         
         @if(session('error'))
-            <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-xl mb-4 font-medium flex items-center gap-2 shadow-sm">
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-xl mb-4 font-medium flex items-center gap-2 shadow-sm animate-fade-in-down">
                 <i class="fas fa-exclamation-circle text-red-500"></i> {{ session('error') }}
             </div>
         @endif
         @if(session('success'))
-            <div class="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded-xl mb-4 font-medium flex items-center gap-2 shadow-sm">
+            <div class="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded-xl mb-4 font-medium flex items-center gap-2 shadow-sm animate-fade-in-down">
                 <i class="fas fa-check-circle text-green-500"></i> {{ session('success') }}
             </div>
         @endif
@@ -215,16 +215,23 @@
                             @forelse($service->details as $detail)
                             <tr class="hover:bg-gray-50 transition group">
                                 <td class="py-4 px-2">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-red-400 transition"></div>
-                                        <span class="font-bold text-gray-700 group-hover:text-gray-900 transition">{{ $detail->sparepart->name }}</span>
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2 group-hover:bg-red-400 transition"></div>
+                                        <div class="flex flex-col">
+                                            @if($detail->sparepart)
+                                                <span class="font-bold text-gray-700 group-hover:text-gray-900 transition">{{ $detail->sparepart->name }}</span>
+                                            @else
+                                                <span class="font-bold text-gray-400 line-through transition" title="Nama Historis">{{ $detail->historical_name ?? 'Barang Telah Dihapus' }}</span>
+                                                <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5"><i class="fas fa-exclamation-triangle"></i> Dihapus dari Inventaris</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="py-4 text-center font-black text-gray-800 bg-gray-50 rounded-lg mx-2 my-2 inline-block px-3">{{ $detail->quantity }}</td>
                                 <td class="py-4 text-right font-medium text-gray-500">Rp {{ number_format($detail->price, 0, ',', '.') }}</td>
                                 <td class="py-4 text-right pr-4 font-black text-gray-900">Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                                 <td class="py-4 text-center">
-                                    <form action="{{ route('admin.services.removeSparepart', ['id' => $service->id, 'detail_id' => $detail->id]) }}" method="POST" class="inline" onsubmit="return confirm('Hapus suku cadang ini dari nota? Stok akan dikembalikan otomatis.')">
+                                    <form action="{{ route('admin.services.removeSparepart', ['id' => $service->id, 'detail_id' => $detail->id]) }}" method="POST" class="inline" onsubmit="return confirm('Hapus suku cadang ini dari nota? Jika barang master masih ada, stoknya akan dikembalikan otomatis.')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-gray-300 hover:text-red-500 hover:bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center transition" title="Hapus Item">

@@ -109,7 +109,7 @@
             <a href="{{ route('admin.services.index') }}" class="flex items-center gap-2 px-6 py-3.5 rounded-xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">
                 <i class="fas fa-times"></i> Batal
             </a>
-            <button type="submit" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-red-500/30">
+            <button type="submit" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-blue-500/30">
                 <i class="fas fa-paper-plane"></i> Mulai Antrean
             </button>
         </div>

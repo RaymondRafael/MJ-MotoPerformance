@@ -14,7 +14,13 @@ return new class extends Migration
         Schema::create('service_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained('services')->onDelete('cascade');
-            $table->foreignId('sparepart_id')->constrained('spareparts')->onDelete('cascade');
+            
+            // 1. Jadikan sparepart_id boleh kosong (nullable) dan set null
+            $table->unsignedBigInteger('sparepart_id')->nullable();
+            $table->foreign('sparepart_id')->references('id')->on('spareparts')->onDelete('set null');
+            
+            // 2. Tambahkan kolom perekam jejak (Snapshot)
+            $table->string('historical_name')->nullable(); // Nama barang saat diservis
             
             $table->integer('quantity');
             $table->integer('price');

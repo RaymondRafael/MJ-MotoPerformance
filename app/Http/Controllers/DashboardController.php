@@ -16,10 +16,10 @@ class DashboardController extends Controller
         $selectedYear = $request->input('year', Carbon::now()->year);
 
         // 2. Pendapatan (Hanya yang berstatus 'finished' pada bulan & tahun tersebut)
-        $pendapatan = Service::where('status', 'finished')
-                            ->whereMonth('created_at', $selectedMonth)
-                            ->whereYear('created_at', $selectedYear)
-                            ->sum('total_cost');
+        $pendapatan = Service::whereIn('status', ['finished', 'lunas']) 
+                ->whereMonth('created_at', $selectedMonth)
+                ->whereYear('created_at', $selectedYear)
+                ->sum('total_cost');
 
         // 3. Antrean Servis (Yang masuk pada bulan & tahun tersebut)
         $antreanAktif = Service::whereIn('status', ['pending', 'processing'])
@@ -28,10 +28,10 @@ class DashboardController extends Controller
                             ->count();
 
         // 4. Servis Selesai (Yang disiapkan pada bulan & tahun tersebut)
-        $selesaiPeriode = Service::where('status', 'finished')
-                                ->whereMonth('updated_at', $selectedMonth)
-                                ->whereYear('updated_at', $selectedYear)
-                                ->count();
+        $selesaiPeriode = Service::whereIn('status', ['finished', 'lunas'])
+                            ->whereMonth('created_at', $selectedMonth)
+                            ->whereYear('created_at', $selectedYear)
+                            ->count();
 
         // 5. Pelanggan Baru (Yang mendaftar pada bulan & tahun tersebut)
         $pelangganBaru = Customer::whereMonth('created_at', $selectedMonth)

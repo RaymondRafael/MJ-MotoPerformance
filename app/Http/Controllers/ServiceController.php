@@ -224,10 +224,11 @@ class ServiceController extends Controller
         // Kalkulasi Subtotal
         $subtotal = $sparepart->price * $request->quantity;
 
-        // 1. Masukkan ke keranjang (tabel service_details)
+        // 1. Masukkan ke keranjang (tabel service_details) dengan Data Snapshot
         ServiceDetail::create([
             'service_id' => $service->id,
             'sparepart_id' => $sparepart->id,
+            'historical_name' => $sparepart->name, // <-- INI TAMBAHANNYA: Merekam jejak nama barang saat diservis
             'quantity' => $request->quantity,
             'price' => $sparepart->price,
             'subtotal' => $subtotal
@@ -243,24 +244,29 @@ class ServiceController extends Controller
     }
 
     /**
-     * Menghapus Suku Cadang dari Nota dan Mengembalikan Stok
+     * Menghapus Suku Cadang dari Nota Servis dan Mengembalikan Stok
      */
     public function removeSparepart($id, $detail_id)
     {
         $service = Service::findOrFail($id);
         $detail = ServiceDetail::findOrFail($detail_id);
-        $sparepart = Sparepart::findOrFail($detail->sparepart_id);
 
-        // 1. Kembalikan stok ke gudang
-        $sparepart->increment('stock', $detail->quantity);
+        // Cek jika barang master-nya masih ada (belum kena Hard Delete / SET NULL)
+        if ($detail->sparepart_id) {
+            $sparepart = Sparepart::find($detail->sparepart_id);
+            if ($sparepart) {
+                // Kembalikan stok karena batal dipasang
+                $sparepart->increment('stock', $detail->quantity);
+            }
+        }
 
-        // 2. Kurangi Total Tagihan Servis
+        // Kurangi total tagihan servis
         $service->decrement('total_cost', $detail->subtotal);
 
-        // 3. Hapus data dari nota
+        // Hapus baris dari nota
         $detail->delete();
 
-        return redirect()->back()->with('success', 'Suku cadang dihapus dan stok dikembalikan.');
+        return redirect()->back()->with('success', 'Barang berhasil dihapus dari nota servis.');
     }
 
     /**

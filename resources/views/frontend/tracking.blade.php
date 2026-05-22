@@ -72,7 +72,8 @@
             
             @php
                 $activeServices = $services->whereIn('status', ['pending', 'processing']);
-                $historyServices = $services->where('status', 'finished');
+                // PERBAIKAN: Menangkap semua variasi status selesai/lunas dan diurutkan dari yang terbaru
+                $historyServices = $services->whereIn('status', ['finished', 'lunas', 'completed', 'paid'])->sortByDesc('updated_at');
             @endphp
 
             @if($activeServices->isEmpty())
@@ -249,12 +250,23 @@
                                     <span class="text-slate-600 font-medium">Jasa Servis</span>
                                     <span class="text-slate-900 font-bold">Rp {{ number_format($service->service_cost, 0, ',', '.') }}</span>
                                 </div>
+                                
                                 @foreach($service->details as $detail)
                                 <div class="flex justify-between items-center px-3 py-1">
-                                    <span class="text-slate-500 truncate mr-2 flex-grow text-xs">- {{ $detail->sparepart->name }} (x{{ $detail->quantity }})</span>
+                                    <span class="text-slate-500 truncate mr-2 flex-grow text-xs">
+                                        - 
+                                        @if($detail->sparepart)
+                                            {{ $detail->sparepart->name }}
+                                        @else
+                                            <span class="line-through opacity-70" title="Barang tidak lagi dijual">{{ $detail->historical_name ?? 'Suku Cadang Lama' }}</span>
+                                            <span class="text-red-400 text-[9px] ml-1 uppercase tracking-wider"><i class="fas fa-exclamation-circle"></i> Discontinue</span>
+                                        @endif
+                                        (x{{ $detail->quantity }})
+                                    </span>
                                     <span class="text-slate-700 font-medium text-xs">Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</span>
                                 </div>
                                 @endforeach
+                                
                             </div>
                         </div>
 

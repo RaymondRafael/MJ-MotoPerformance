@@ -7,7 +7,7 @@
     
     <div class="mb-8 flex items-center justify-between border-b border-gray-100 pb-5">
         <div class="flex items-center">
-            <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl mr-4 shadow-inner">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl mr-4 shadow-inner">
                 <i class="fas fa-user-cog"></i>
             </div>
             <div>
@@ -15,7 +15,7 @@
                 <p class="text-gray-500 text-sm mt-1">Perbarui informasi profil dan kontak mekanik bengkel.</p>
             </div>
         </div>
-        <a href="{{ route('admin.mechanics.index') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:text-red-600 transition-all font-bold shadow-sm">
+        <a href="{{ route('admin.mechanics.index') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:text-blue-600 transition-all font-bold shadow-sm">
             <i class="fas fa-arrow-left"></i> Kembali
         </a>
     </div>
@@ -64,7 +64,7 @@
             <a href="{{ route('admin.mechanics.index') }}" class="flex items-center gap-2 px-6 py-3.5 rounded-xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">
                 <i class="fas fa-times"></i> Batal
             </a>
-            <button type="submit" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-red-500/30">
+            <button type="submit" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-blue-500/30">
                 <i class="fas fa-save"></i> Simpan Perubahan
             </button>
         </div>

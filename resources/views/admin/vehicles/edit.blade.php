@@ -13,9 +13,9 @@
 
 <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 max-w-4xl mx-auto mt-4">
     
-    <div class="mb-8 flex items-center justify-between border-b border-gray-100 pb-5">
-        <div class="flex items-center">
-            <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl mr-4 shadow-inner">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-gray-100 pb-5">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-inner shrink-0">
                 <i class="fas fa-motorcycle"></i>
             </div>
             <div>
@@ -23,7 +23,7 @@
                 <p class="text-gray-500 text-sm mt-1">Perbarui kepemilikan atau detail fisik kendaraan pelanggan.</p>
             </div>
         </div>
-        <a href="{{ route('admin.vehicles.index') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:text-red-600 transition-all font-bold shadow-sm">
+        <a href="{{ route('admin.vehicles.index') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:text-blue-600 transition-all font-bold shadow-sm shrink-0">
             <i class="fas fa-arrow-left"></i> Kembali
         </a>
     </div>
@@ -57,32 +57,35 @@
 
             <input type="hidden" name="customer_id" id="hidden_customer_id" value="{{ $currentCustomerId }}" required>
 
-            <div id="trigger_customer" class="w-full flex items-center justify-between px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-100 transition-all group" onclick="toggleCustomDropdown('menu_customer', 'trigger_customer')">
+            <div id="trigger_customer" class="w-full flex items-center justify-between px-5 py-4 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all group shadow-sm" onclick="toggleCustomDropdown('menu_customer', 'trigger_customer')">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg {{ $currentCustomer ? 'bg-red-100 text-red-600' : 'bg-gray-200 text-gray-500' }} flex items-center justify-center group-hover:bg-white transition-colors" id="icon_box_customer">
+                    <div class="w-10 h-10 rounded-xl {{ $currentCustomer ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400' }} flex items-center justify-center transition-colors" id="icon_box_customer">
                         <i class="fas fa-user text-sm"></i>
                     </div>
-                    <span id="label_customer" class="font-bold select-none {{ $currentCustomer ? 'text-gray-900' : 'text-gray-400' }}">{{ $currentCustomerName }}</span>
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Pelanggan Terpilih</p>
+                        <span id="label_customer" class="font-black select-none text-base {{ $currentCustomer ? 'text-gray-900' : 'text-gray-400' }}">{{ $currentCustomerName }}</span>
+                    </div>
                 </div>
-                <i id="icon_customer" class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+                <i id="icon_customer" class="fas fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
             </div>
 
             <div id="menu_customer" class="hidden absolute top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50">
                 <div class="max-h-60 overflow-y-auto custom-scrollbar py-2">
                     @foreach($customers as $customer)
-                        <div class="px-5 py-3 hover:bg-red-50 cursor-pointer transition-colors group border-b border-gray-50 last:border-0 flex items-center justify-between" 
+                        <div class="px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors group border-b border-gray-50 last:border-0 flex items-center justify-between" 
                              onclick="selectOption('customer', '{{ $customer->id }}', '{{ addslashes($customer->name) }}')">
                             <div class="flex items-center gap-3">
-                                <div class="w-2 h-2 rounded-full bg-gray-300 group-hover:bg-red-500 transition-colors"></div>
+                                <div class="w-2 h-2 rounded-full bg-gray-300 group-hover:bg-blue-500 transition-colors"></div>
                                 <div>
-                                    <p class="font-bold text-gray-800 group-hover:text-red-600 transition-colors">{{ $customer->name }}</p>
+                                    <p class="font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{{ $customer->name }}</p>
                                     <p class="text-xs text-gray-500 font-medium"><i class="fab fa-whatsapp mr-1"></i> {{ $customer->phone_number }}</p>
                                 </div>
                             </div>
                             @if($currentCustomerId == $customer->id)
-                                <i class="fas fa-check-circle text-green-500" id="check_{{ $customer->id }}"></i>
+                                <i class="fas fa-check-circle text-blue-500" id="check_{{ $customer->id }}"></i>
                             @else
-                                <i class="fas fa-check-circle text-green-500 hidden" id="check_{{ $customer->id }}"></i>
+                                <i class="fas fa-check-circle text-blue-500 hidden" id="check_{{ $customer->id }}"></i>
                             @endif
                         </div>
                     @endforeach
@@ -97,7 +100,7 @@
                     <i class="fas fa-id-badge"></i>
                 </div>
                 <input type="text" name="license_plate" value="{{ old('license_plate', $vehicle->license_plate) }}" required placeholder="Contoh: D 1234 ABC"
-                    class="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-black text-gray-800 uppercase tracking-widest">
+                    class="w-full pl-11 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-black text-gray-800 uppercase tracking-widest shadow-sm">
             </div>
         </div>
 
@@ -109,7 +112,7 @@
                         <i class="fas fa-industry"></i>
                     </div>
                     <input type="text" name="brand" value="{{ old('brand', $vehicle->brand) }}" required placeholder="Contoh: Honda"
-                        class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 capitalize shadow-sm">
                 </div>
             </div>
 
@@ -120,7 +123,7 @@
                         <i class="fas fa-motorcycle"></i>
                     </div>
                     <input type="text" name="model" value="{{ old('model', $vehicle->model) }}" required placeholder="Contoh: Vario 150"
-                        class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 capitalize shadow-sm">
                 </div>
             </div>
 
@@ -131,16 +134,16 @@
                         <i class="fas fa-palette"></i>
                     </div>
                     <input type="text" name="color" value="{{ old('color', $vehicle->color) }}" placeholder="Contoh: Hitam Matte"
-                        class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 capitalize shadow-sm">
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100 mt-10">
-            <a href="{{ route('admin.vehicles.index') }}" class="flex items-center gap-2 px-6 py-3.5 rounded-xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">
-                <i class="fas fa-times"></i> Batal
+        <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-100 mt-10">
+            <a href="{{ route('admin.vehicles.index') }}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-gray-500 font-bold hover:bg-gray-100 transition-colors text-center">
+                Batal
             </a>
-            <button type="submit" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-red-500/30">
+            <button type="submit" class="w-full sm:w-auto flex justify-center items-center gap-2 px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-black transition-transform transform hover:-translate-y-1 shadow-lg shadow-blue-500/30">
                 <i class="fas fa-save"></i> Simpan Perubahan
             </button>
         </div>
@@ -164,9 +167,9 @@
         closeDropdowns();
 
         menu.classList.remove('hidden');
-        trigger.classList.add('border-red-400', 'ring-4', 'ring-red-50', 'bg-white');
-        trigger.classList.remove('border-gray-200', 'bg-gray-50');
-        icon.classList.add('rotate-180', 'text-red-500');
+        trigger.classList.add('border-blue-400', 'ring-4', 'ring-blue-50', 'bg-white');
+        trigger.classList.remove('border-gray-200');
+        icon.classList.add('rotate-180', 'text-blue-500');
         
         activeDropdownMenu = menu;
         activeDropdownTrigger = trigger;
@@ -175,12 +178,12 @@
     function closeDropdowns() {
         if (activeDropdownMenu) {
             activeDropdownMenu.classList.add('hidden');
-            activeDropdownTrigger.classList.remove('border-red-400', 'ring-4', 'ring-red-50', 'bg-white');
-            activeDropdownTrigger.classList.add('border-gray-200', 'bg-gray-50');
+            activeDropdownTrigger.classList.remove('border-blue-400', 'ring-4', 'ring-blue-50');
+            activeDropdownTrigger.classList.add('border-gray-200');
             
             const icon = activeDropdownTrigger.querySelector('.fa-chevron-down');
             if(icon) {
-                icon.classList.remove('rotate-180', 'text-red-500');
+                icon.classList.remove('rotate-180', 'text-blue-500');
             }
 
             activeDropdownMenu = null;
@@ -196,14 +199,14 @@
         const labelElement = document.getElementById(`label_${type}`);
         labelElement.innerText = label;
         labelElement.classList.remove('text-gray-400');
-        labelElement.classList.add('text-gray-900', 'font-bold');
+        labelElement.classList.add('text-gray-900', 'font-black');
 
         // 3. Ubah warna ikon di sebelah kiri label
         const iconBox = document.getElementById(`icon_box_${type}`);
-        iconBox.classList.remove('bg-gray-200', 'text-gray-500');
-        iconBox.classList.add('bg-red-100', 'text-red-600');
+        iconBox.classList.remove('bg-gray-100', 'text-gray-400');
+        iconBox.classList.add('bg-blue-50', 'text-blue-600');
 
-        // 4. Memindahkan ceklis hijau ke pelanggan yang baru dipilih
+        // 4. Memindahkan ceklis biru ke pelanggan yang baru dipilih
         document.querySelectorAll('[id^="check_"]').forEach(el => el.classList.add('hidden'));
         const selectedCheck = document.getElementById(`check_${value}`);
         if(selectedCheck) selectedCheck.classList.remove('hidden');

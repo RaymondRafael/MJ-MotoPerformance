@@ -6,11 +6,18 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\PasswordResetController; 
 
+// --- Rute Publik (Tidak Butuh Token) ---
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
-// Rute Terlindungi (Hanya bisa diakses jika memiliki Token)
+// Rute untuk Lupa & Reset Password (Menggunakan Controller Baru)
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update');
+
+
+// --- Rute Terlindungi (Wajib Memiliki Token) ---
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
@@ -29,7 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
     Route::post('/services/{id}/sparepart', [ServiceController::class, 'addSparepart']);
     Route::delete('/services/{id}/sparepart/{detail_id}', [ServiceController::class, 'removeSparepart']);
-    Route::put('/services/{id}', [App\Http\Controllers\Api\ServiceController::class, 'update']);
+    Route::put('/services/{id}', [ServiceController::class, 'update']);
 
     // RUTE PELANGGAN (Member Area)
     Route::get('/my-garage', [CustomerController::class, 'myGarage']);

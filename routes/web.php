@@ -11,6 +11,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PurchaseController;
 
 // 1. Route Autentikasi (Login & Logout)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('guest');
@@ -24,6 +25,18 @@ Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm']
 Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email')->middleware('guest');
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset')->middleware('guest');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update')->middleware('guest');
+
+
+use Illuminate\Http\Request;
+
+// Rute Jembatan untuk Aplikasi Mobile
+Route::get('/mobile-reset-password', function (Request $request) {
+    $token = $request->query('token');
+    $email = $request->query('email');
+    
+    // Tampilkan halaman jembatan
+    return view('mobile_redirect', compact('token', 'email'));
+});
 
 
 // 2. Route Publik
@@ -45,10 +58,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('vehicles', VehicleController::class);
     Route::resource('services', ServiceController::class);
     Route::put('services/{id}/status', [ServiceController::class, 'updateStatus'])->name('services.updateStatus');
+    
     // Rute untuk Fitur Kalkulasi & Nota Servis
     Route::post('services/{id}/add-sparepart', [ServiceController::class, 'addSparepart'])->name('services.addSparepart');
     Route::delete('services/{id}/remove-sparepart/{detail_id}', [ServiceController::class, 'removeSparepart'])->name('services.removeSparepart');
     Route::put('services/{id}/update-cost', [ServiceController::class, 'updateServiceCost'])->name('services.updateCost');
+
+    Route::resource('purchases', PurchaseController::class);
+    
+    // PERBAIKAN DI SINI: Hapus awalan /admin dan admin. 
+    // Saya juga mengubah App\Http\Controllers\PurchaseController::class menjadi PurchaseController::class karena di atas sudah di-use.
+    Route::delete('purchases/item/{id}', [PurchaseController::class, 'destroyItem'])->name('purchases.destroyItem');
 });
 
 // 4. Route Dashboard Admin
