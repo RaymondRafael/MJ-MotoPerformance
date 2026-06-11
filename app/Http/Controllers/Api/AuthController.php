@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Customer;
-use Illuminate\Support\Facades\Http; // <-- WAJIB TAMBAHKAN INI UNTUK FONNTE
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -106,9 +106,7 @@ class AuthController extends Controller
         ], 200);
     }
 
-    // =========================================================================
     // FUNGSI BANTUAN UNTUK MENGIRIM WA (MODE SILENT)
-    // =========================================================================
     private function kirimWelcomeWA($phone, $name, $platform)
     {
         try {
@@ -126,7 +124,7 @@ class AuthController extends Controller
             $pesan .= "Mulai sekarang, segala informasi mengenai *Rincian Tagihan* dan *Status Pengerjaan* kendaraan Anda akan diinformasikan ke nomor ini secara otomatis.\n\n";
             $pesan .= "Salam hangat,\n*MJ MotoPerformance*";
 
-            // 3. Tembak Fonnte secara diam-diam
+            // 3. Tembak Fonnte
             Http::withHeaders([
                 'Authorization' => env('FONNTE_TOKEN') 
             ])->post('https://api.fonnte.com/send', [

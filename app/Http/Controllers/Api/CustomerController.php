@@ -19,24 +19,24 @@ class CustomerController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil pelanggan tidak ditemukan.'], 404);
         }
 
-        // --- 1. TANGKAP FILTER DARI MOBILE ---
+        // 1. TANGKAP FILTER DARI MOBILE
         $month = $request->query('month');
         $year = $request->query('year');
 
-        // --- 2. BUAT PONDASI QUERY (Untuk Customer Ini Saja) ---
+        // 2. BUAT PONDASI QUERY (Untuk Customer Ini Saja)
         $baseQuery = Service::with(['vehicle', 'mechanic', 'details.sparepart'])
             ->whereHas('vehicle', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             });
 
-        // --- 3. AMBIL DATA AKTIF (WAJIB TAMPIL, Mengabaikan Filter Waktu) ---
+        // 3. AMBIL DATA AKTIF (WAJIB TAMPIL, Mengabaikan Filter Waktu)
         $activeServices = (clone $baseQuery)
             ->whereIn('status', ['pending', 'processing'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // --- 4. AMBIL DATA RIWAYAT (DITERAPKAN FILTER WAKTU) ---
-        $historyQuery = (clone $baseQuery)->where('status', 'finished');
+        // 4. AMBIL DATA RIWAYAT (DITERAPKAN FILTER WAKTU)
+        $historyQuery = (clone $baseQuery)->whereIn('status', ['finished', 'lunas', 'completed', 'paid']);
         
         // Jika ada filter bulan & tahun, terapkan ke Riwayat
         if ($month && $year) {
@@ -44,7 +44,7 @@ class CustomerController extends Controller
                          ->whereYear('created_at', $year);
         }
 
-        $historyServices = $historyQuery->orderBy('created_at', 'desc')->get();
+        $historyServices = $historyQuery->orderBy('updated_at', 'desc')->get();
 
         return response()->json([
             'success' => true,
@@ -77,7 +77,11 @@ class CustomerController extends Controller
                         'jasa_servis' => (float) ($service->service_cost ?? 0),
                         'rincian_suku_cadang' => $service->details->map(function($detail) {
                             return [
-                                'nama' => $detail->sparepart?->name ?? 'Suku Cadang',
+                                // PERBAIKAN LOGIKA SNAPSHOT: 
+                                // Jika barang asli masih ada, pakai nama asli. Jika tidak ada, pakai nama historis.
+                                'nama' => $detail->sparepart 
+                                            ? $detail->sparepart->name 
+                                            : ($detail->historical_name ?? 'Suku Cadang (Discontinue)'),
                                 'qty' => $detail->quantity,
                                 'subtotal' => (float) ($detail->subtotal ?? 0),
                             ];

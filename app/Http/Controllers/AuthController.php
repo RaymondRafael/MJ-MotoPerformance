@@ -57,7 +57,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
-        return redirect('/'); // Kembali ke halaman utama
+        return redirect('/');
     }
 
     // Menampilkan halaman form registrasi pelanggan
@@ -66,9 +66,7 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    // =========================================================================
     // 1. REGISTRASI VIA WEBSITE 
-    // =========================================================================
     public function register(Request $request)
     {
         $request->validate([
@@ -138,10 +136,7 @@ class AuthController extends Controller
     }
 
 
-    // =========================================================================
     // FITUR LUPA PASSWORD & RESET PASSWORD
-    // =========================================================================
-    
     // 1. Menampilkan form input email (Lupa Password)
     public function showForgotPasswordForm()
     {
@@ -195,9 +190,7 @@ class AuthController extends Controller
     }
 
     
-    // =========================================================================
     // FUNGSI BANTUAN UNTUK MENGIRIM WA (DENGAN JEBAKAN TOTAL)
-    // =========================================================================
     private function kirimWelcomeWA($phone, $name, $platform)
     {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);

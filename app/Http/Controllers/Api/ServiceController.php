@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\Mechanic;
-use Illuminate\Support\Facades\Http; // Wajib diimpor untuk tembak API Fonnte
+use Illuminate\Support\Facades\Http;
 
 class ServiceController extends Controller
 {

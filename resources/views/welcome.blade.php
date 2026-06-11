@@ -1,184 +1,568 @@
 <!DOCTYPE html>
-<html lang="id" class="scroll-smooth"> <head>
+<html lang="id" class="scroll-smooth">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MJ MotoPerformance - Sistem Manajemen Bengkel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Animasi Bola Cahaya Melayang di Background */
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --red: #DC2626;
+            --red-hover: #B91C1C;
+            --red-subtle: #FEF2F2;
+            --red-border: #FECACA;
+            --ink: #0C0C0C;
+            --ink-2: #1F1F1F;
+            --muted: #6B7280;
+            --border: #E5E7EB;
+            --surface: #F9FAFB;
+            --white: #FFFFFF;
+        }
+        html { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        body { background: var(--white); color: var(--ink); overflow-x: hidden; }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            height: 64px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            transition: box-shadow 0.2s;
+        }
+        nav.scrolled { box-shadow: 0 2px 24px rgba(0,0,0,0.06); }
+        .nav-inner {
+            max-width: 1120px; margin: 0 auto; padding: 0 28px;
+            height: 100%; display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; }
+        .logo-icon {
+            width: 34px; height: 34px; background: var(--red); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 15px;
+            transition: transform 0.2s;
+        }
+        .logo:hover .logo-icon { transform: rotate(-6deg) scale(1.08); }
+        .logo-wordmark { font-size: 14px; font-weight: 800; letter-spacing: 0.04em; color: var(--ink); }
+        .logo-wordmark span { color: var(--red); }
+        .nav-right { display: flex; align-items: center; gap: 6px; }
+        .nav-link {
+            font-size: 14px; font-weight: 500; color: var(--muted);
+            text-decoration: none; padding: 7px 13px; border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .nav-link:hover { color: var(--ink); background: var(--surface); }
+        .nav-btn {
+            font-size: 14px; font-weight: 600; color: #fff;
+            background: var(--red); text-decoration: none;
+            padding: 8px 18px; border-radius: 8px;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .nav-btn:hover { background: var(--red-hover); transform: translateY(-1px); }
+
+        /* ── HERO ── */
+        .hero {
+            min-height: 100vh; padding-top: 64px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: var(--white);
+            position: relative; overflow: hidden;
+        }
+        .hero-bg-grid {
+            position: absolute; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 48px 48px;
+            opacity: 0.4;
+        }
+        .hero-bg-fade {
+            position: absolute; inset: 0; z-index: 1;
+            background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(220,38,38,0.07) 0%, transparent 70%);
+        }
+        .hero-content {
+            position: relative; z-index: 2;
+            text-align: center;
+            padding: 0 24px;
+            max-width: 760px;
+        }
+        .hero-pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: var(--red-subtle); border: 1px solid var(--red-border);
+            color: var(--red); font-size: 12px; font-weight: 600;
+            letter-spacing: 0.06em; text-transform: uppercase;
+            padding: 5px 14px; border-radius: 100px;
+            margin-bottom: 28px;
+            animation: fadeUp 0.6s ease both;
+        }
+        .hero-pill .pulse {
+            width: 7px; height: 7px; border-radius: 50%; background: var(--red);
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.5; }
+        }
+        .hero h1 {
+            font-size: clamp(40px, 6vw, 72px);
+            font-weight: 900; letter-spacing: -0.04em; line-height: 1.05;
+            color: var(--ink);
+            margin-bottom: 22px;
+            animation: fadeUp 0.6s 0.1s ease both;
+        }
+        .hero h1 .accent { color: var(--red); position: relative; display: inline-block; }
+        .hero h1 .accent::after {
+            content: '';
+            position: absolute; bottom: 2px; left: 0; right: 0; height: 3px;
+            background: var(--red); border-radius: 2px;
+            transform: scaleX(0); transform-origin: left;
+            animation: underline-in 0.5s 0.9s ease forwards;
+        }
+        @keyframes underline-in { to { transform: scaleX(1); } }
+        .hero p {
+            font-size: 18px; line-height: 1.7; color: var(--muted);
+            max-width: 520px; margin: 0 auto 36px;
+            animation: fadeUp 0.6s 0.2s ease both;
+        }
+        .hero-actions {
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+            animation: fadeUp 0.6s 0.3s ease both;
+        }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 30px; background: var(--red); color: #fff;
+            font-size: 15px; font-weight: 700; border-radius: 10px;
+            text-decoration: none; border: none; cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn-primary:hover { background: var(--red-hover); transform: translateY(-2px); }
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 30px; background: transparent; color: var(--ink);
+            font-size: 15px; font-weight: 600; border-radius: 10px;
+            border: 1.5px solid var(--border); text-decoration: none;
+            transition: border-color 0.15s, background 0.15s, transform 0.15s;
+        }
+        .btn-secondary:hover { border-color: var(--red); color: var(--red); background: var(--red-subtle); transform: translateY(-2px); }
+
+        .hero-scroll-hint {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px;
+            color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+            text-transform: uppercase; opacity: 0;
+            animation: fadeIn 1s 1.2s ease forwards;
+        }
+        .scroll-arrow { animation: bounce 1.8s ease-in-out infinite; font-size: 14px; }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Kelas Khusus untuk Animasi Scroll (JavaScript) */
-        .reveal {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: all 0.8s ease-out;
+        /* ── MARQUEE TICKER ── */
+        .ticker-wrap {
+            background: var(--ink-2); overflow: hidden;
+            padding: 13px 0; border-top: 1px solid #2D2D2D;
+            border-bottom: 1px solid #2D2D2D;
         }
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
+        .ticker-track {
+            display: flex; gap: 0;
+            animation: ticker 28s linear infinite;
+            white-space: nowrap;
         }
-        
-        /* Memberikan sedikit jeda berurutan untuk Card */
-        .delay-100 { transition-delay: 100ms; }
-        .delay-200 { transition-delay: 200ms; }
-        .delay-300 { transition-delay: 300ms; }
+        .ticker-track:hover { animation-play-state: paused; }
+        .ticker-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 32px;
+            font-size: 13px; font-weight: 600; color: #9CA3AF;
+            letter-spacing: 0.04em; text-transform: uppercase;
+        }
+        .ticker-item i { color: var(--red); font-size: 12px; }
+        @keyframes ticker {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+
+        /* ── FEATURES ── */
+        .features {
+            padding: 100px 28px;
+            background: var(--white);
+        }
+        .features-inner { max-width: 1120px; margin: 0 auto; }
+        .section-eyebrow {
+            font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--red);
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: clamp(28px, 3.5vw, 40px);
+            font-weight: 800; letter-spacing: -0.03em;
+            color: var(--ink); margin-bottom: 56px;
+            line-height: 1.15; max-width: 480px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            position: relative; overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--red);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover { border-color: #FECACA; transform: translateY(-4px); box-shadow: 0 12px 40px rgba(220,38,38,0.08); }
+        .feature-card:hover::before { transform: scaleX(1); }
+        .feature-icon-wrap {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .feature-card:hover .feature-icon-wrap { transform: scale(1.1) rotate(-4deg); }
+        .icon-red { background: var(--red-subtle); color: var(--red); }
+        .icon-green { background: #F0FDF4; color: #16A34A; }
+        .icon-dark { background: var(--ink); color: #fff; }
+        .feature-card h3 {
+            font-size: 17px; font-weight: 700; color: var(--ink);
+            margin-bottom: 10px; letter-spacing: -0.01em;
+        }
+        .feature-card p {
+            font-size: 14px; line-height: 1.7; color: var(--muted);
+        }
+
+        /* ── HOW IT WORKS ── */
+        .howto {
+            padding: 100px 28px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .howto-inner { max-width: 1120px; margin: 0 auto; }
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0;
+            position: relative;
+        }
+        .step {
+            padding: 32px 28px;
+            position: relative;
+            transition: background 0.2s;
+            border-radius: 12px;
+        }
+        .step:hover { background: var(--white); }
+        .step-number {
+            font-size: 11px; font-weight: 800; color: var(--red);
+            letter-spacing: 0.1em; text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .step-num-circle {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--red); color: #fff;
+            font-size: 11px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .step h4 {
+            font-size: 16px; font-weight: 700; color: var(--ink);
+            margin-bottom: 8px; letter-spacing: -0.01em;
+        }
+        .step p { font-size: 13px; line-height: 1.65; color: var(--muted); }
+        .step-arrow {
+            position: absolute; right: -10px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--border); font-size: 18px; z-index: 1;
+        }
+
+        /* ── CTA BANNER ── */
+        .cta-banner {
+            padding: 100px 28px;
+            background: var(--white);
+        }
+        .cta-inner {
+            max-width: 1120px; margin: 0 auto;
+            background: var(--ink);
+            border-radius: 24px;
+            padding: 72px 64px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 48px;
+            position: relative; overflow: hidden;
+        }
+        .cta-inner::before {
+            content: '';
+            position: absolute; top: -60px; right: -60px;
+            width: 240px; height: 240px; border-radius: 50%;
+            background: var(--red); opacity: 0.12;
+        }
+        .cta-inner::after {
+            content: '';
+            position: absolute; bottom: -40px; left: 160px;
+            width: 160px; height: 160px; border-radius: 50%;
+            background: var(--red); opacity: 0.07;
+        }
+        .cta-text { position: relative; z-index: 1; }
+        .cta-text h2 {
+            font-size: clamp(26px, 3vw, 38px);
+            font-weight: 800; letter-spacing: -0.03em; color: #fff;
+            margin-bottom: 12px; line-height: 1.15;
+        }
+        .cta-text p { font-size: 16px; color: #9CA3AF; line-height: 1.6; max-width: 400px; }
+        .cta-actions { display: flex; gap: 12px; flex-shrink: 0; position: relative; z-index: 1; flex-wrap: wrap; }
+        .btn-cta-white {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 28px; background: #fff; color: var(--ink);
+            font-size: 15px; font-weight: 700; border-radius: 10px;
+            text-decoration: none; transition: opacity 0.15s, transform 0.15s;
+        }
+        .btn-cta-white:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-cta-outline {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 28px; background: transparent; color: #fff;
+            font-size: 15px; font-weight: 600; border-radius: 10px;
+            border: 1.5px solid rgba(255,255,255,0.2); text-decoration: none;
+            transition: border-color 0.15s, background 0.15s, transform 0.15s;
+        }
+        .btn-cta-outline:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
+
+        /* ── FOOTER ── */
+        footer { background: var(--ink-2); border-top: 1px solid #2D2D2D; padding: 48px 28px 32px; }
+        .footer-inner { max-width: 1120px; margin: 0 auto; }
+        .footer-top {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 40px; margin-bottom: 36px; flex-wrap: wrap;
+        }
+        .footer-brand .logo-wordmark { color: #fff; }
+        .footer-tagline { font-size: 13px; color: #6B7280; margin-top: 8px; max-width: 240px; line-height: 1.6; }
+        .footer-links { display: flex; gap: 24px; align-items: center; }
+        .footer-links a { font-size: 13px; color: #6B7280; text-decoration: none; transition: color 0.15s; }
+        .footer-links a:hover { color: #fff; }
+        .footer-bottom {
+            border-top: 1px solid #2D2D2D; padding-top: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 16px; flex-wrap: wrap;
+        }
+        .footer-copy { font-size: 12px; color: #4B5563; }
+        .social-links { display: flex; gap: 8px; }
+        .social-btn {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: #2D2D2D; display: flex; align-items: center; justify-content: center;
+            color: #6B7280; font-size: 13px; text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+        }
+        .social-btn:hover { background: var(--red); color: #fff; }
+
+        /* ── REVEAL ── */
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+        .d1 { transition-delay: 0.1s; }
+        .d2 { transition-delay: 0.2s; }
+        .d3 { transition-delay: 0.3s; }
+        .d4 { transition-delay: 0.4s; }
+
+        @media (max-width: 768px) {
+            .cta-inner { flex-direction: column; padding: 48px 32px; }
+            .step-arrow { display: none; }
+            .hero h1 { font-size: 42px; }
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-x-hidden">
+<body>
 
-    <nav class="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20 items-center">
-                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
-                    <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/30 transition transform hover:scale-105">
-                        <i class="fas fa-motorcycle text-white text-xl"></i>
-                    </div>
-                    <span class="font-black text-2xl tracking-wider">
-                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-red-400">MJ MOTO</span><span class="text-gray-800">PERFORMANCE</span>
-                    </span>
-                </div>
-                <div class="hidden md:flex space-x-6 items-center">
-                    <a href="#beranda" class="text-gray-500 hover:text-red-600 font-bold transition">Beranda</a>
-                    <a href="#layanan" class="text-gray-500 hover:text-red-600 font-bold transition">Layanan</a>
-                    <div class="border-l-2 border-gray-200 h-6 mx-2"></div>
-                    <a href="/login" class="text-gray-800 hover:text-red-600 font-bold transition">Masuk</a>
-                    <a href="/register" class="group relative px-6 py-2.5 font-bold text-white rounded-lg bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all overflow-hidden">
-                        <span class="relative z-10">Daftar Akun</span>
-                        <div class="absolute inset-0 h-full w-0 bg-white/20 transition-all duration-300 ease-out group-hover:w-full z-0"></div>
-                    </a>
-                </div>
+    <nav id="mainNav">
+        <div class="nav-inner">
+            <a class="logo" href="#beranda">
+                <div class="logo-icon"><i class="fas fa-motorcycle"></i></div>
+                <div class="logo-wordmark">MJ MOTO<span>PERFORMANCE</span></div>
+            </a>
+            <div class="nav-right">
+                <a href="#beranda" class="nav-link">Beranda</a>
+                <a href="#layanan" class="nav-link">Layanan</a>
+                <a href="/login" class="nav-link">Masuk</a>
+                <a href="/register" class="nav-btn">Daftar Akun</a>
             </div>
         </div>
     </nav>
 
-    <div id="beranda" class="relative bg-gray-900 min-h-screen flex items-center justify-center overflow-hidden pt-20">
-        <div class="absolute top-0 -left-4 w-72 h-72 bg-red-600 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob"></div>
-        <div class="absolute top-0 -right-4 w-72 h-72 bg-orange-600 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob animation-delay-2000"></div>
-        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-red-800 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob"></div>
-
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')]"></div>
-
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center text-center z-10">
-            <div class="reveal inline-block px-4 py-1.5 rounded-full border border-gray-700 bg-gray-800/50 backdrop-blur-sm text-gray-300 font-semibold text-sm mb-8">
-                <span class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Sistem Terintegrasi Web & Mobile
-                </span>
+    <!-- HERO -->
+    <section id="beranda" class="hero">
+        <div class="hero-bg-grid"></div>
+        <div class="hero-bg-fade"></div>
+        <div class="hero-content">
+            <div class="hero-pill">
+                <span class="pulse"></span>
+                Sistem Terintegrasi Web &amp; Mobile
             </div>
-            
-            <h1 class="reveal delay-100 text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl mb-6">
-                Servis Motor Profesional <br class="hidden md:block"> & <span class="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-400">Sangat Transparan</span>
-            </h1>
-            
-            <p class="reveal delay-200 mt-4 text-xl text-gray-400 max-w-2xl font-medium leading-relaxed">
-                Tinggalkan cara lama! Pantau riwayat servis, rincian biaya, dan status pengerjaan kendaraan Anda secara real-time langsung dari genggaman.
-            </p>
-            
-            <div class="reveal delay-300 mt-10 flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
-                <a href="/register" class="flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-lg shadow-red-500/40 transition transform hover:-translate-y-1 hover:scale-105">
-                    <i class="fas fa-rocket mr-2"></i> Mulai Sekarang
+            <h1>Servis Motor<br><span class="accent">Lebih Transparan</span></h1>
+            <p>Pantau riwayat servis, rincian biaya, dan status pengerjaan kendaraan Anda secara real-time langsung dari genggaman.</p>
+            <div class="hero-actions">
+                <a href="/register" class="btn-primary">
+                    <i class="fas fa-rocket"></i> Mulai Sekarang
                 </a>
-                <a href="#layanan" class="flex items-center justify-center px-8 py-4 text-lg font-bold rounded-xl text-white bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:border-gray-600 shadow-lg transition transform hover:-translate-y-1">
-                    <i class="fas fa-chevron-down mr-2"></i> Pelajari Lebih Lanjut
+                <a href="#layanan" class="btn-secondary">
+                    <i class="fas fa-chevron-down"></i> Pelajari Lebih Lanjut
                 </a>
             </div>
         </div>
-        
-        <div class="absolute bottom-0 w-full overflow-hidden leading-[0]">
-            <svg class="relative block w-[calc(100%+1.3px)] h-[50px] md:h-[100px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118,130.83,123.6,191.27,109.2,238.16,98.6,281.82,78.2,321.39,56.44Z" fill="#ffffff"></path>
-            </svg>
+        <div class="hero-scroll-hint">
+            <span>Scroll</span>
+            <i class="fas fa-chevron-down scroll-arrow"></i>
+        </div>
+    </section>
+
+    <!-- TICKER -->
+    <div class="ticker-wrap" aria-hidden="true">
+        <div class="ticker-track" id="ticker">
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Tune-up &amp; Servis Rutin</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Ganti Oli &amp; Filter</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Perbaikan Rem &amp; Suspensi</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Notifikasi WhatsApp</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Riwayat Servis Digital</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Estimasi Biaya Transparan</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Mekanik Berpengalaman</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Tune-up &amp; Servis Rutin</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Ganti Oli &amp; Filter</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Perbaikan Rem &amp; Suspensi</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Notifikasi WhatsApp</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Riwayat Servis Digital</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Estimasi Biaya Transparan</div>
+            <div class="ticker-item"><i class="fas fa-check-circle"></i> Mekanik Berpengalaman</div>
         </div>
     </div>
 
-    <div id="layanan" class="py-24 pt-32 bg-white relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="reveal text-sm font-black text-red-600 tracking-widest uppercase mb-2">Keunggulan Kami</h2>
-            <h3 class="reveal delay-100 text-3xl md:text-4xl font-extrabold text-gray-900 mb-16">Standar Baru Perawatan Motor</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                
-                <div class="reveal delay-100 group p-8 bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-50 to-transparent rounded-bl-full -z-10 transition-transform group-hover:scale-150"></div>
-                    <div class="w-16 h-16 mx-auto bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-inner transform group-hover:rotate-6 transition-transform">
+    <!-- FEATURES -->
+    <section id="layanan" class="features">
+        <div class="features-inner">
+            <div class="section-eyebrow reveal">Keunggulan Kami</div>
+            <div class="section-title reveal d1">Standar baru perawatan motor Anda</div>
+            <div class="features-grid">
+                <div class="feature-card reveal d1">
+                    <div class="feature-icon-wrap icon-red">
                         <i class="fas fa-laptop-code"></i>
                     </div>
-                    <h4 class="text-xl font-black text-gray-900 mb-3">Portal Pelanggan</h4>
-                    <p class="text-gray-500 leading-relaxed text-sm">Pantau progres perbaikan dan riwayat servis kendaraan secara aman melalui dasbor akun pribadi Anda kapan saja.</p>
+                    <h3>Portal Pelanggan</h3>
+                    <p>Pantau progres perbaikan dan riwayat servis kendaraan secara aman melalui dasbor akun pribadi Anda kapan saja dan di mana saja.</p>
                 </div>
-
-                <div class="reveal delay-200 group p-8 bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-50 to-transparent rounded-bl-full -z-10 transition-transform group-hover:scale-150"></div>
-                    <div class="w-16 h-16 mx-auto bg-green-100 text-green-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-inner transform group-hover:rotate-6 transition-transform">
+                <div class="feature-card reveal d2">
+                    <div class="feature-icon-wrap icon-green">
                         <i class="fab fa-whatsapp"></i>
                     </div>
-                    <h4 class="text-xl font-black text-gray-900 mb-3">Notifikasi WhatsApp</h4>
-                    <p class="text-gray-500 leading-relaxed text-sm">Tidak perlu bolak-balik bertanya. Sistem kami akan mengirimkan pesan otomatis ke WA Anda saat motor selesai diservis.</p>
+                    <h3>Notifikasi WhatsApp</h3>
+                    <p>Tidak perlu bolak-balik bertanya. Sistem kami mengirimkan pesan otomatis langsung ke WhatsApp Anda saat motor selesai diservis.</p>
                 </div>
-
-                <div class="reveal delay-300 group p-8 bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-50 to-transparent rounded-bl-full -z-10 transition-transform group-hover:scale-150"></div>
-                    <div class="w-16 h-16 mx-auto bg-gray-900 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-inner transform group-hover:rotate-6 transition-transform">
+                <div class="feature-card reveal d3">
+                    <div class="feature-icon-wrap icon-dark">
                         <i class="fas fa-tools"></i>
                     </div>
-                    <h4 class="text-xl font-black text-gray-900 mb-3">Mekanik Handal</h4>
-                    <p class="text-gray-500 leading-relaxed text-sm">Ditangani langsung oleh mekanik berpengalaman dengan transparansi rincian tagihan biaya dan penggunaan suku cadang.</p>
+                    <h3>Mekanik Handal</h3>
+                    <p>Ditangani langsung oleh mekanik berpengalaman dengan transparansi penuh atas rincian tagihan biaya dan penggunaan suku cadang.</p>
                 </div>
-
             </div>
         </div>
-    </div>
+    </section>
 
-    <footer class="bg-gray-900 pt-16 pb-8 border-t border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <div class="reveal flex justify-center items-center gap-2 mb-6">
-                <i class="fas fa-motorcycle text-red-500 text-2xl"></i>
-                <span class="font-black text-xl text-white tracking-wider">MJ MOTO<span class="text-red-500">PERFORMANCE</span></span>
+    <!-- HOW IT WORKS -->
+    <section class="howto">
+        <div class="howto-inner">
+            <div class="section-eyebrow reveal">Cara Kerja</div>
+            <div class="section-title reveal d1">Mudah dalam 4 langkah</div>
+            <div class="steps-grid">
+                <div class="step reveal d1">
+                    <div class="step-number"><span class="step-num-circle">1</span></div>
+                    <h4>Buat Akun</h4>
+                    <p>Daftarkan diri Anda secara gratis dan tambahkan data kendaraan Anda ke sistem.</p>
+                    <span class="step-arrow"><i class="fas fa-chevron-right"></i></span>
+                </div>
+                <div class="step reveal d2">
+                    <div class="step-number"><span class="step-num-circle">2</span></div>
+                    <h4>Bawa Motor</h4>
+                    <p>Kunjungi bengkel dan serahkan motor kepada mekanik kami yang berpengalaman.</p>
+                    <span class="step-arrow"><i class="fas fa-chevron-right"></i></span>
+                </div>
+                <div class="step reveal d3">
+                    <div class="step-number"><span class="step-num-circle">3</span></div>
+                    <h4>Pantau Progres</h4>
+                    <p>Lihat status pengerjaan secara real-time dari dasbor akun atau aplikasi mobile Anda.</p>
+                    <span class="step-arrow"><i class="fas fa-chevron-right"></i></span>
+                </div>
+                <div class="step reveal d4">
+                    <div class="step-number"><span class="step-num-circle">4</span></div>
+                    <h4>Terima Notifikasi</h4>
+                    <p>Dapatkan pesan WhatsApp otomatis saat motor selesai beserta rincian biaya lengkap.</p>
+                </div>
             </div>
-            <p class="reveal delay-100 text-gray-500 text-sm mb-8 max-w-md mx-auto">Sistem Informasi Manajemen Bengkel & Tracking Servis Kendaraan Berbasis Web dan Mobile App.</p>
-            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-gray-600 text-xs font-semibold">&copy; 2026 MJ MotoPerformance. All rights reserved.</p>
-                <div class="flex gap-4">
-                    <a href="https://www.instagram.com/rymndd___/" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-red-600 hover:text-white transition"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 hover:bg-red-600 hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+        </div>
+    </section>
+
+    <!-- CTA BANNER -->
+    <section class="cta-banner">
+        <div class="cta-inner reveal">
+            <div class="cta-text">
+                <h2>Siap mencoba pengalaman servis yang berbeda?</h2>
+                <p>Bergabung sekarang dan nikmati kemudahan memantau kendaraan Anda secara digital.</p>
+            </div>
+            <div class="cta-actions">
+                <a href="/register" class="btn-cta-white"><i class="fas fa-rocket"></i> Daftar Gratis</a>
+                <a href="/login" class="btn-cta-outline"><i class="fas fa-sign-in-alt"></i> Masuk</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <div class="logo-icon"><i class="fas fa-motorcycle"></i></div>
+                        <div class="logo-wordmark footer-brand">MJ MOTO<span>PERFORMANCE</span></div>
+                    </div>
+                    <p class="footer-tagline">Sistem manajemen bengkel & tracking servis kendaraan berbasis web dan mobile.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#beranda">Beranda</a>
+                    <a href="#layanan">Layanan</a>
+                    <a href="/login">Masuk</a>
+                    <a href="/register">Daftar</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copy">&copy; 2026 MJ MotoPerformance. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.instagram.com/rymndd___/" class="social-btn"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-btn"><i class="fab fa-facebook-f"></i></a>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Menggunakan Intersection Observer untuk mendeteksi elemen masuk layar
-            const observerOptions = {
-                root: null,
-                rootMargin: '0px',
-                threshold: 0.15 // Elemen akan ter-trigger saat 15% bagiannya terlihat
-            };
-
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // Menambahkan class 'active' yang akan memicu animasi CSS
-                        entry.target.classList.add('active');
-                        // Berhenti memantau elemen ini agar animasi tidak berulang saat discroll naik lagi
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, observerOptions);
-
-            // Mencari semua elemen yang memiliki class 'reveal' dan mulai memantaunya
-            document.querySelectorAll('.reveal').forEach((el) => {
-                observer.observe(el);
-            });
+        const nav = document.getElementById('mainNav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 20);
         });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     </script>
 </body>
 </html>
