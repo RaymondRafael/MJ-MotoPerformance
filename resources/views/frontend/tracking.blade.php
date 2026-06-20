@@ -72,7 +72,6 @@
             
             @php
                 $activeServices = $services->whereIn('status', ['pending', 'processing']);
-                // PERBAIKAN: Menangkap semua variasi status selesai/lunas dan diurutkan dari yang terbaru
                 $historyServices = $services->whereIn('status', ['finished', 'lunas', 'completed', 'paid'])->sortByDesc('updated_at');
             @endphp
 
@@ -225,19 +224,32 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10" id="historyContainer">
                     @foreach($historyServices as $service)
                     <div class="history-card bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group" 
-                         data-plat="{{ $service->vehicle->license_plate }}" 
-                         data-periode="{{ $service->created_at->format('Y-m') }}">
+                        data-plat="{{ $service->vehicle->license_plate }}" 
+                        data-periode="{{ $service->created_at->format('Y-m') }}">
                         
                         <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
                             <div>
-                                <span class="inline-block text-[10px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-md uppercase tracking-wider mb-2">Selesai</span>
+                                @if($service->status == 'lunas')
+                                    <span class="inline-block text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 px-2 py-1 rounded-md uppercase tracking-wider mb-2"><i class="fas fa-check-double mr-1"></i> Lunas</span>
+                                @else
+                                    <span class="inline-block text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 px-2 py-1 rounded-md uppercase tracking-wider mb-2"><i class="fas fa-check mr-1"></i> Selesai (Siap Ambil)</span>
+                                @endif
+
                                 <h4 class="font-black text-slate-900 text-lg">{{ $service->vehicle->license_plate }}</h4>
                                 <p class="text-xs text-slate-500 font-medium">{{ $service->vehicle->brand }} {{ $service->vehicle->model }}</p>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-1 rounded">{{ $service->created_at->format('d M Y') }}</p>
                                 <p class="text-[10px] text-slate-400 mt-2 uppercase tracking-wider">Mekanik:</p>
-                                <p class="text-sm text-slate-700 font-bold">{{ $service->mechanic->name ?? '-' }}</p>
+                                
+                                @if($service->mechanic)
+                                    <p class="text-sm text-slate-700 font-bold">{{ $service->mechanic->name }}</p>
+                                @elseif($service->historical_mechanic_name)
+                                    <p class="text-sm text-slate-400 font-bold line-through" title="Mekanik ini sudah tidak ada di sistem">{{ $service->historical_mechanic_name }}</p>
+                                @else
+                                    <p class="text-sm text-slate-400 font-bold">-</p>
+                                @endif
+
                             </div>
                         </div>
                         
@@ -258,8 +270,12 @@
                                         @if($detail->sparepart)
                                             {{ $detail->sparepart->name }}
                                         @else
-                                            <span class="line-through opacity-70" title="Barang tidak lagi dijual">{{ $detail->historical_name ?? 'Suku Cadang Lama' }}</span>
-                                            <span class="text-red-400 text-[9px] ml-1 uppercase tracking-wider"><i class="fas fa-exclamation-circle"></i> Discontinue</span>
+                                            <span class="line-through opacity-70" title="Barang tidak lagi dijual">
+                                                {{ $detail->historical_name ?? 'Barang Telah Dihapus' }}
+                                            </span>
+                                            <span class="text-red-400 text-[9px] ml-1 uppercase tracking-wider">
+                                                <i class="fas fa-exclamation-circle"></i> Discontinue
+                                            </span>
                                         @endif
                                         (x{{ $detail->quantity }})
                                     </span>

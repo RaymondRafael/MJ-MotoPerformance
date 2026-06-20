@@ -12,6 +12,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PurchaseController;
+use Illuminate\Http\Request;
 
 // 1. Route Autentikasi (Login & Logout)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('guest');
@@ -26,8 +27,6 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset')->middleware('guest');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update')->middleware('guest');
 
-
-use Illuminate\Http\Request;
 
 // Rute Jembatan untuk Aplikasi Mobile
 Route::get('/mobile-reset-password', function (Request $request) {
@@ -48,6 +47,7 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/tracking', [TrackingController::class, 'index'])->name('tracking.index');
     Route::post('/tracking', [TrackingController::class, 'search'])->name('tracking.search');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 });
 
 // 3. Route Admin (Dikunci dengan middleware 'auth'!)
@@ -66,10 +66,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::resource('purchases', PurchaseController::class);
     
-    // PERBAIKAN DI SINI: Hapus awalan /admin dan admin. 
-    // Saya juga mengubah App\Http\Controllers\PurchaseController::class menjadi PurchaseController::class karena di atas sudah di-use.
     Route::delete('purchases/item/{id}', [PurchaseController::class, 'destroyItem'])->name('purchases.destroyItem');
 });
-
-// 4. Route Dashboard Admin
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');

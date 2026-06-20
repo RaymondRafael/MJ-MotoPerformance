@@ -42,9 +42,9 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.vehicles.update', $vehicle->id) }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.vehicles.update', $vehicle->id) }}" method="POST" class="space-y-6" novalidate>
         @csrf
-        @method('PUT') 
+        @method('PUT')
         
         <div class="relative z-30">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pemilik Kendaraan <span class="text-red-500">*</span></label>
@@ -128,7 +128,7 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Warna</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Warna<span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-palette"></i>

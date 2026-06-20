@@ -59,5 +59,10 @@
             </tbody>
         </table>
     </div>
+    @if($mechanics->hasPages())
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            {{ $mechanics->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection

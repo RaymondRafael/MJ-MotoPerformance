@@ -7,14 +7,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 
 class PasswordResetController extends Controller
 {
     /**
-     * Mengirimkan link reset password ke email pengguna.
+     * Mengirimkan link reset password langsung ke halaman Web Formulir Baru
      */
     public function sendResetLinkEmail(Request $request)
     {
@@ -31,35 +30,61 @@ class PasswordResetController extends Controller
             ], 422);
         }
 
-        // Mengirim email reset link bawaan Laravel
-        $status = Password::broker()->sendResetLink(
-            $request->only('email')
-        );
+        $user = User::where('email', $request->email)->first();
 
-        if ($status == Password::RESET_LINK_SENT) {
+        // 1. Buat token aman dari Laravel Broker
+        $token = Password::broker()->createToken($user);
+
+        // 2. LANGSUNG ARAHKAN KE RUTE FORM WEB (Menghilangkan rute jembatan mobile)
+        $resetUrl = url("/reset-password/{$token}?email=" . urlencode($user->email));
+
+        // 3. Kirim email menggunakan inline HTML murni (Menghindari error missing views)
+        try {
+            Mail::send([], [], function ($message) use ($user, $resetUrl) {
+                $message->to($user->email)
+                    ->subject('Atur Ulang Kata Sandi - MJ MotoPerformance')
+                    ->html("
+                        <div style='font-family: sans-serif; padding: 30px; background-color: #f8fafc; color: #334155;'>
+                            <div style='max-width: 500px; margin: 0 auto; background-color: white; padding: 24px; rounded-xl; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                                <h2 style='color: #1e293b; margin-bottom: 8px;'>Permintaan Atur Ulang Password</h2>
+                                <p style='font-size: 14px; line-height: 1.5; color: #64748b;'>Halo, kami menerima permintaan untuk mengatur ulang kata sandi akun Anda di MJ MotoPerformance.</p>
+                                <p style='font-size: 14px; line-height: 1.5; color: #64748b;'>Silakan klik tautan di bawah ini untuk membuat kata sandi baru langsung melalui web browser Anda:</p>
+                                
+                                <div style='text-align: center; margin: 25px 0;'>
+                                    <a href='{$resetUrl}' style='display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;'>Atur Ulang Kata Sandi Anda</a>
+                                </div>
+                                
+                                <p style='font-size: 12px; color: #94a3b8; border-t: 1px solid #f1f5f9; padding-top: 15px;'>Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan pesan ini secara aman.</p>
+                            </div>
+                        </div>
+                    ");
+            });
+
             return response()->json([
                 'success' => true,
-                'message' => 'Link reset password telah dikirim ke email Anda.'
+                'message' => 'Tautan pemulihan kata sandi telah berhasil dikirim ke email Anda.'
             ], 200);
-        }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengirim email reset password. Silakan coba lagi.'
-        ], 500);
+        } catch (\Exception $e) {
+            // Jika ada masalah koneksi mailer/SMTP, kirim info dalam format JSON, bukan HTML
+            return response()->json([
+                'success' => false,
+                'message' => 'Sistem gagal memicu email server. Detail internal: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Memproses penggantian password baru.
+     * Memproses penggantian password baru (Digunakan jika frontend mobile menembak langsung)
      */
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:6|confirmed', // Pastikan ada input password_confirmation di frontend
+            'password' => 'required|min:6|confirmed',
         ], [
-            'password.confirmed' => 'Konfirmasi password tidak cocok.'
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.'
         ]);
 
         if ($validator->fails()) {
@@ -72,28 +97,23 @@ class PasswordResetController extends Controller
         $status = Password::broker()->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
-                // Proses update password
                 $user->forceFill([
                     'password' => Hash::make($password)
-                ])->setRememberToken(Str::random(60));
-
+                ])->setRememberToken(\Illuminate\Support\Str::random(60));
                 $user->save();
-
-                event(new PasswordReset($user));
             }
         );
 
         if ($status == Password::PASSWORD_RESET) {
             return response()->json([
                 'success' => true,
-                'message' => 'Password berhasil diubah. Silakan login dengan password baru Anda.'
+                'message' => 'Kata sandi akun Anda berhasil diperbarui.'
             ], 200);
         }
 
         return response()->json([
             'success' => false,
-            // $status biasanya mengembalikan pesan seperti 'passwords.token' (Token tidak valid)
-            'message' => __($status) 
+            'message' => __($status)
         ], 400);
     }
 }

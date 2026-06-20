@@ -92,7 +92,7 @@
 
                         <input type="hidden" name="mechanic_id" id="hidden_mechanic_id" value="{{ $currentMechanicId }}" required>
 
-                        <div id="trigger_mechanic" class="w-full flex items-center justify-between px-5 py-4 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all group shadow-sm" onclick="toggleCustomDropdown('menu_mechanic', 'trigger_mechanic')">
+                        <div id="trigger_mechanic" class="w-full flex items-center justify-between px-5 py-4 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all group shadow-sm" onclick="toggleCustomDropdown('menu_mechanic', 'trigger_mechanic', 'search_mechanic')">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl {{ $currentMechanic ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400' }} flex items-center justify-center transition-colors" id="icon_box_mechanic">
                                     <i class="fas fa-wrench text-sm"></i>
@@ -106,15 +106,25 @@
                         </div>
 
                         <div id="menu_mechanic" class="hidden absolute top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50">
+                            
+                            <div class="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <i class="fas fa-search text-xs"></i>
+                                    </div>
+                                    <input type="text" id="search_mechanic" class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all" placeholder="Cari Nama Mekanik..." autocomplete="off" onclick="event.stopPropagation()">
+                                </div>
+                            </div>
+
                             <div class="max-h-64 overflow-y-auto custom-scrollbar py-2">
                                 @foreach($mechanics as $mechanic)
-                                    <div class="px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors group flex items-center justify-between" 
-                                         onclick="selectOption('mechanic', '{{ $mechanic->id }}', '{{ $mechanic->name }}')">
+                                    <div class="mechanic-item px-5 py-3 hover:bg-blue-50 cursor-pointer transition-colors group flex items-center justify-between" 
+                                         onclick="selectOption('mechanic', '{{ $mechanic->id }}', '{{ addslashes($mechanic->name) }}')">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
                                                 <i class="fas fa-user-tie text-xs"></i>
                                             </div>
-                                            <span class="font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{{ $mechanic->name }}</span>
+                                            <span class="font-bold text-gray-800 group-hover:text-blue-600 transition-colors mechanic-name">{{ $mechanic->name }}</span>
                                         </div>
                                         @if($currentMechanicId == $mechanic->id)
                                             <i class="fas fa-check-circle text-blue-500" id="check_{{ $mechanic->id }}"></i>
@@ -123,6 +133,11 @@
                                         @endif
                                     </div>
                                 @endforeach
+
+                                <div id="no_mechanic_found" class="hidden px-5 py-6 text-center">
+                                    <i class="fas fa-search-minus text-gray-300 text-2xl mb-2"></i>
+                                    <p class="text-sm font-bold text-gray-500">Mekanik tidak ditemukan.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -157,10 +172,12 @@
     let activeDropdownMenu = null;
     let activeDropdownTrigger = null;
 
-    function toggleCustomDropdown(menuId, triggerId) {
+    // Fungsi Utama Dropdown yang mendukung Parameter Input Search
+    function toggleCustomDropdown(menuId, triggerId, searchInputId) {
         const menu = document.getElementById(menuId);
         const trigger = document.getElementById(triggerId);
         const icon = trigger.querySelector('.fa-chevron-down');
+        const searchInput = document.getElementById(searchInputId);
 
         if (activeDropdownMenu === menu) {
             closeDropdowns();
@@ -171,23 +188,31 @@
 
         menu.classList.remove('hidden');
         trigger.classList.add('border-blue-400', 'ring-4', 'ring-blue-50', 'bg-white');
-        trigger.classList.remove('border-gray-200');
+        trigger.classList.remove('border-gray-200', 'bg-gray-50');
         icon.classList.add('rotate-180', 'text-blue-500');
         
         activeDropdownMenu = menu;
         activeDropdownTrigger = trigger;
+
+        // Auto-focus ke kotak pencarian
+        if(searchInput) {
+            setTimeout(() => searchInput.focus(), 50);
+        }
     }
 
     function closeDropdowns() {
         if (activeDropdownMenu) {
             activeDropdownMenu.classList.add('hidden');
-            activeDropdownTrigger.classList.remove('border-blue-400', 'ring-4', 'ring-blue-50');
-            activeDropdownTrigger.classList.add('border-gray-200');
+            activeDropdownTrigger.classList.remove('border-blue-400', 'ring-4', 'ring-blue-50', 'bg-white');
+            activeDropdownTrigger.classList.add('border-gray-200', 'bg-gray-50');
             
             const icon = activeDropdownTrigger.querySelector('.fa-chevron-down');
             if(icon) {
                 icon.classList.remove('rotate-180', 'text-blue-500');
             }
+
+            // Bersihkan input teks saat menu ditutup
+            resetSearch('mechanic');
 
             activeDropdownMenu = null;
             activeDropdownTrigger = null;
@@ -218,6 +243,50 @@
         closeDropdowns();
     }
 
+    // --- LOGIKA LIVE SEARCH ---
+    document.getElementById('search_mechanic').addEventListener('input', function(e) {
+        filterDropdown(e.target.value, '.mechanic-item', ['mechanic-name'], 'no_mechanic_found');
+    });
+
+    function filterDropdown(keyword, itemSelector, textClasses, noFoundId) {
+        const query = keyword.toLowerCase();
+        const items = document.querySelectorAll(itemSelector);
+        let hasVisibleItem = false;
+
+        items.forEach(item => {
+            let itemText = '';
+            textClasses.forEach(cls => {
+                const element = item.querySelector('.' + cls);
+                if(element) itemText += element.innerText.toLowerCase() + ' ';
+            });
+
+            if (itemText.includes(query)) {
+                item.classList.remove('hidden');
+                item.classList.add('flex');
+                hasVisibleItem = true;
+            } else {
+                item.classList.remove('flex');
+                item.classList.add('hidden');
+            }
+        });
+
+        const noFoundMsg = document.getElementById(noFoundId);
+        if (!hasVisibleItem && query !== '') {
+            noFoundMsg.classList.remove('hidden');
+        } else {
+            noFoundMsg.classList.add('hidden');
+        }
+    }
+
+    function resetSearch(type) {
+        const input = document.getElementById(`search_${type}`);
+        if (input) {
+            input.value = '';
+            filterDropdown('', `.${type}-item`, [], `no_${type}_found`);
+        }
+    }
+
+    // Menutup dropdown jika user mengklik area di luar dropdown
     document.addEventListener('click', function(event) {
         if (activeDropdownMenu && !activeDropdownTrigger.contains(event.target) && !activeDropdownMenu.contains(event.target)) {
             closeDropdowns();

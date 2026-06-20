@@ -12,14 +12,11 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    /**
-     * Menampilkan halaman utama Dasbor Servis (Antrean)
-     */
+    // Menampilkan Daftar Servis dengan Fitur Pencarian (Mendukung Snapshot Data)
     public function index(Request $request)
     {
         $search = $request->search;
 
-        // Mencari berdasarkan plat nomor, nama pelanggan, atau keluhan
         $services = Service::with(['vehicle.customer', 'mechanic'])
             ->when($search, function ($query, $search) {
                 return $query->whereHas('vehicle', function ($q) use ($search) {
@@ -27,88 +24,103 @@ class ServiceController extends Controller
                     ->orWhereHas('customer', function ($qc) use ($search) {
                         $qc->where('name', 'like', "%{$search}%");
                     });
-                })->orWhere('complaint', 'like', "%{$search}%");
+                })
+                // PENGAMANAN & FITUR BARU: Cari juga di kolom snapshot jika master data sudah dihapus
+                ->orWhere('historical_license_plate', 'like', "%{$search}%")
+                ->orWhere('historical_customer_name', 'like', "%{$search}%")
+                ->orWhere('complaint', 'like', "%{$search}%");
             })
-            ->latest()
-            ->get();
+            ->orderBy('id', 'asc') 
+            ->paginate(10);
 
+        
+        
         return view('admin.services.index', compact('services'));
     }
 
-    /**
-     * Membuka Halaman Form "Servis Baru"
-     */
+    // Menampilkan Form Tambah Servis Baru
     public function create()
     {
-        // Mengambil semua data kendaraan (lengkap dengan nama pemiliknya) dan data mekanik
-        // Data ini dikirim ke form untuk dijadikan pilihan (Dropdown / Select)
         $vehicles = Vehicle::with('customer')->get();
         $mechanics = Mechanic::all();
 
         return view('admin.services.create', compact('vehicles', 'mechanics'));
     }
 
-    /**
-     * Menyimpan data antrean servis baru ke Database
-     */
+    // Menyimpan Data Servis Baru (Proses Perekaman Snapshot)
     public function store(Request $request)
     {
-        // 1. Validasi inputan form
+        // Kamus Error
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'mechanic_id' => 'required|exists:mechanics,id',
             'complaint' => 'required|string',
+        ], [
+            'vehicle_id.required' => 'Gagal: Plat kendaraan wajib dipilih terlebih dahulu.',
+            'vehicle_id.exists'   => 'Gagal: Kendaraan tidak ditemukan di sistem.',
+            'mechanic_id.required'=> 'Gagal: Mekanik yang bertugas wajib dipilih.',
+            'mechanic_id.exists'  => 'Gagal: Mekanik tidak valid atau sudah dihapus.',
+            'complaint.required'  => 'Gagal: Keluhan pelanggan tidak boleh dikosongkan.',
         ]);
 
-        // 2. Simpan ke tabel services
+        // 1. Ambil data Master Kendaraan beserta data Pelanggan saat ini
+        $vehicle = Vehicle::with('customer')->findOrFail($request->vehicle_id);
+        $mechanic = Mechanic::find($request->mechanic_id);
+
+        // 2. Simpan ke database termasuk data "fotokopi" (Snapshot)
         Service::create([
             'vehicle_id' => $request->vehicle_id,
             'mechanic_id' => $request->mechanic_id,
+            
+            // PROSES SNAPSHOT: Mengunci riwayat data saat ini agar abadi
+            'historical_customer_name'  => $vehicle->customer->name,
+            'historical_customer_phone' => $vehicle->customer->phone_number,
+            'historical_license_plate'  => $vehicle->license_plate,
+            'historical_vehicle_motor'  => $vehicle->brand . ' ' . $vehicle->model,
+            'historical_mechanic_name'  => $mechanic ? $mechanic->name : null,
+            
             'complaint' => $request->complaint,
-            'status' => 'pending', // Otomatis masuk antrean (Menunggu)
-            'service_cost' => 0,   // Biaya awal 0, nanti diisi saat pengerjaan
+            'status' => 'pending', 
+            'service_cost' => 0,   
             'total_cost' => 0,
         ]);
 
-        // 3. Kembalikan ke halaman utama dengan pesan sukses
         return redirect()->route('admin.services.index')->with('success', 'Antrean kendaraan berhasil ditambahkan!');
     }
 
-    /**
-     * Menampilkan Detail Nota Servis (Untuk melihat Rincian Suku Cadang)
-     */
+    // Menampilkan Detail Servis dan Form Tambah Suku Cadang
     public function show($id)
     {
         $service = Service::with(['vehicle.customer', 'mechanic', 'details.sparepart'])->findOrFail($id);
-        
-        // Mengambil suku cadang yang stoknya masih ada (lebih dari 0)
         $spareparts = Sparepart::where('stock', '>', 0)->get();
         
         return view('admin.services.show', compact('service', 'spareparts'));
     }
 
-    /**
-     * Mengubah Status Pengerjaan & Memicu Notifikasi WhatsApp Gateway
-     */
+    // Memperbarui Status Servis & Kirim WA menggunakan Data Pasif (Snapshot)
     public function updateStatus(Request $request, $id)
     {
-        // 1. Tambahkan 'lunas' ke dalam aturan validasi
         $request->validate([
             'status' => 'required|in:pending,processing,finished,canceled,lunas'
         ]);
 
-        $service = Service::with('vehicle.customer')->findOrFail($id);
+        $service = Service::findOrFail($id);
+        
+        // PENGAMANAN ALUR: Blokir Loncat Status
+        if ($request->status === 'finished' && $service->status === 'pending') {
+            return redirect()->back()->with('error', 'Aksi Ditolak: Kendaraan belum diproses. Silakan tambahkan biaya jasa atau suku cadang terlebih dahulu.');
+        }
+
         $service->status = $request->status;
         $service->save();
 
-        $customerName = $service->vehicle->customer->name;
-        $customerPhone = $service->vehicle->customer->phone_number;
-        $platNomor = $service->vehicle->license_plate;
+        // PENGAMANAN SNAPSHOT: Ambil data dari kolom historis, jika kosong baru ambil dari relasi aktif
+        $customerName  = $service->historical_customer_name ?? ($service->vehicle->customer->name ?? 'Pelanggan');
+        $customerPhone = $service->historical_customer_phone ?? ($service->vehicle->customer->phone_number ?? '');
+        $platNomor     = $service->historical_license_plate ?? ($service->vehicle->license_plate ?? '-');
+        $motor         = $service->historical_vehicle_motor ?? ($service->vehicle ? $service->vehicle->brand . ' ' . $service->vehicle->model : 'Kendaraan');
         
-        // LOGIKA WA 1: Jika status diubah menjadi "SELESAI" (Minta Ambil Motor)
         if ($request->status == 'finished') {
-            
-            $motor = $service->vehicle->brand . ' ' . $service->vehicle->model;
             $totalBiaya = 'Rp ' . number_format($service->total_cost, 0, ',', '.');
 
             $pesan = "Halo *{$customerName}*,\n\n";
@@ -117,26 +129,20 @@ class ServiceController extends Controller
             $pesan .= "Silakan datang ke bengkel kami untuk melakukan pembayaran dan pengambilan kendaraan.\n\n";
             $pesan .= "Terima kasih telah mempercayakan kendaraan Anda kepada kami! 🙏";
 
-            return $this->kirimWhatsApp($customerPhone, $pesan, 'Status selesai! Notifikasi WhatsApp untuk pengambilan kendaraan berhasil dikirim.');
+            return $this->kirimWhatsApp($customerPhone, $pesan, 'Status Selesai! Notifikasi WhatsApp berhasil dikirim.');
         }
         
-        // LOGIKA WA 2: Jika status diubah menjadi "LUNAS" (Ucapan Terima Kasih)
         elseif ($request->status == 'lunas') {
-            
             $pesan = "Halo *{$customerName}*,\n\n";
             $pesan .= "Terima kasih atas pembayaran servis kendaraan *{$platNomor}* Anda di MJ MotoPerformance. Tagihan Anda telah dinyatakan *LUNAS*.\n\n";
             $pesan .= "Semoga kendaraan Anda selalu dalam kondisi prima. Hati-hati di jalan dan sampai jumpa di servis berikutnya! 🏍️💨";
 
-            return $this->kirimWhatsApp($customerPhone, $pesan, 'Pembayaran Lunas! Ucapan terima kasih berhasil dikirim ke WhatsApp pelanggan.');
+            return $this->kirimWhatsApp($customerPhone, $pesan, 'Pembayaran Lunas! Ucapan terima kasih berhasil dikirim.');
         }
 
-        // Jika status yang dipilih 'pending' atau 'processing', cukup tampilkan pesan biasa
         return redirect()->back()->with('success', 'Status pengerjaan kendaraan berhasil diperbarui!');
     }
 
-    /**
-     * FUNGSI BANTUAN (Helper) UNTUK MENGIRIM WA AGAR KODE LEBIH RAPI
-     */
     private function kirimWhatsApp($phone, $pesan, $successMessage)
     {
         try {
@@ -154,139 +160,172 @@ class ServiceController extends Controller
                 return redirect()->back()->with('error', 'Status tersimpan, namun gagal mengirim WhatsApp. Pastikan Device Fonnte terkoneksi.');
             }
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mencoba mengirim WhatsApp: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat mengirim WhatsApp: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Form Edit Servis (Disesuaikan dengan tampilan baru)
-     */
+    // =========================================================================
+    // BLOK PENGAMAN EDIT TRANSAKSI
+    // =========================================================================
+
     public function edit($id)
     {
-        // Load relasi vehicle.customer agar nama dan plat bisa ditampilkan di form edit
         $service = Service::with('vehicle.customer')->findOrFail($id);
-        
+
+        // Tolak akses jika status sudah Selesai atau Lunas
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->route('admin.services.index')->with('error', 'Akses Ditolak: Servis telah selesai. Anda tidak dapat mengubah data keluhan atau mekanik lagi.');
+        }
+
+        // PENGAMANAN: Jika data master kendaraan sudah terhapus (vehicle_id null), tolak edit agar tidak merusak relasi dropdown
+        if (!$service->vehicle_id) {
+            return redirect()->route('admin.services.index')->with('error', 'Akses Ditolak: Master data kendaraan untuk transaksi ini sudah dihapus.');
+        }
+
         $vehicles = Vehicle::with('customer')->get();
         $mechanics = Mechanic::all();
         
         return view('admin.services.edit', compact('service', 'vehicles', 'mechanics'));
     }
 
-    /**
-     * Menyimpan perubahan Edit Servis (Tanpa Catatan Mekanik)
-     */
     public function update(Request $request, $id)
     {
-        // 1. Validasi input (Hanya Keluhan dan Mekanik)
+        $service = Service::findOrFail($id);
+
+        // Tolak proses simpan jika status sudah Selesai atau Lunas
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->route('admin.services.index')->with('error', 'Aksi Ditolak: Transaksi servis ini telah ditutup secara permanen.');
+        }
+
+        // Pesan Error di Update
         $request->validate([
             'complaint' => 'required|string',
             'mechanic_id' => 'nullable|exists:mechanics,id',
+        ], [
+            'complaint.required' => 'Gagal: Keluhan pelanggan tidak boleh dikosongkan.',
+            'mechanic_id.exists' => 'Gagal: Mekanik tidak valid atau sudah dihapus.',
         ]);
 
-        $service = Service::findOrFail($id);
+        // PERBARUI JEJAK NAMA MEKANIK (Jika Ada Perubahan Mekanik)
+        $mechanicName = $service->historical_mechanic_name;
+        if ($request->mechanic_id) {
+            $mechanic = Mechanic::find($request->mechanic_id);
+            if ($mechanic) {
+                $mechanicName = $mechanic->name;
+            }
+        }
 
-        // 2. Simpan Perubahan
         $service->update([
             'complaint' => $request->complaint,
             'mechanic_id' => $request->mechanic_id,
+            'historical_mechanic_name' => $mechanicName, 
         ]);
 
-        return redirect()->route('admin.services.index')->with('success', 'Informasi servis berhasil diperbarui!');
+        return redirect()->route('admin.services.index')->with('success', 'Informasi servis diperbarui!');
     }
 
-    /**
-     * Menghapus Riwayat Servis
-     */
     public function destroy($id)
     {
-        Service::findOrFail($id)->delete();
-        return redirect()->route('admin.services.index')->with('success', 'Riwayat servis dihapus!');
+        $service = Service::findOrFail($id);
+
+        // BLOKIR PENGHAPUSAN JIKA SUDAH LUNAS ATAU SELESAI
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->back()->with('error', 'Aksi Ditolak: Nota yang sudah Selesai atau Lunas telah masuk ke dalam buku besar pendapatan dan tidak boleh dihapus secara fisik demi integritas laporan keuangan.');
+        }
+
+        $service->delete();
+        return redirect()->route('admin.services.index')->with('success', 'Riwayat antrean servis yang belum diproses berhasil dibatalkan dan dihapus.');
     }
 
-    /**
-     * Menambahkan Suku Cadang ke Nota dan Memotong Stok
-     */
+    // =========================================================================
+    // BLOK PENGAMAN PENAMBAHAN/PENGURANGAN BIAYA DI NOTA
+    // =========================================================================
+
     public function addSparepart(Request $request, $id)
     {
+        $service = Service::findOrFail($id);
+
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->back()->with('error', 'Nota sudah ditutup/selesai. Anda tidak dapat menambahkan suku cadang lagi.');
+        }
+
         $request->validate([
             'sparepart_id' => 'required|exists:spareparts,id',
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $service = Service::findOrFail($id);
         $sparepart = Sparepart::findOrFail($request->sparepart_id);
 
-        // Validasi: Apakah stoknya cukup?
         if ($sparepart->stock < $request->quantity) {
-            return redirect()->back()->with('error', 'Stok ' . $sparepart->name . ' tidak mencukupi! Sisa stok: ' . $sparepart->stock);
+            return redirect()->back()->with('error', 'Stok tidak mencukupi!');
         }
 
-        // Kalkulasi Subtotal
         $subtotal = $sparepart->price * $request->quantity;
 
-        // 1. Masukkan ke keranjang (tabel service_details) dengan Data Snapshot
         ServiceDetail::create([
             'service_id' => $service->id,
             'sparepart_id' => $sparepart->id,
-            'historical_name' => $sparepart->name, // <-- INI TAMBAHANNYA: Merekam jejak nama barang saat diservis
+            'historical_name' => $sparepart->name,
             'quantity' => $request->quantity,
             'price' => $sparepart->price,
             'subtotal' => $subtotal
         ]);
 
-        // 2. Potong stok suku cadang di gudang
         $sparepart->decrement('stock', $request->quantity);
-
-        // 3. Tambahkan ke Total Tagihan Servis
         $service->increment('total_cost', $subtotal);
+
+        if ($service->status === 'pending') {
+            $service->update(['status' => 'processing']);
+        }
 
         return redirect()->back()->with('success', 'Suku cadang ditambahkan ke nota.');
     }
 
-    /**
-     * Menghapus Suku Cadang dari Nota Servis dan Mengembalikan Stok
-     */
     public function removeSparepart($id, $detail_id)
     {
         $service = Service::findOrFail($id);
+
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->back()->with('error', 'Aksi Ditolak: Nota sudah ditutup/selesai. Anda tidak dapat menghapus item dari nota ini.');
+        }
+
         $detail = ServiceDetail::findOrFail($detail_id);
 
-        // Cek jika barang master-nya masih ada (belum kena Hard Delete / SET NULL)
         if ($detail->sparepart_id) {
             $sparepart = Sparepart::find($detail->sparepart_id);
             if ($sparepart) {
-                // Kembalikan stok karena batal dipasang
                 $sparepart->increment('stock', $detail->quantity);
             }
         }
 
-        // Kurangi total tagihan servis
         $service->decrement('total_cost', $detail->subtotal);
-
-        // Hapus baris dari nota
         $detail->delete();
 
-        return redirect()->back()->with('success', 'Barang berhasil dihapus dari nota servis.');
+        return redirect()->back()->with('success', 'Barang berhasil dihapus.');
     }
 
-    /**
-     * Memperbarui Biaya Jasa Mekanik
-     */
     public function updateServiceCost(Request $request, $id)
     {
+        $service = Service::findOrFail($id);
+
+        if (in_array($service->status, ['finished', 'lunas'])) {
+            return redirect()->back()->with('error', 'Aksi Ditolak: Anda tidak dapat mengubah biaya jasa karena nota servis telah ditutup.');
+        }
+
         $request->validate([
             'service_cost' => 'required|numeric|min:0'
         ]);
 
-        $service = Service::findOrFail($id);
-        
-        // Simpan biaya jasa yang lama untuk selisih kalkulasi
         $oldCost = $service->service_cost;
         $newCost = $request->service_cost;
 
-        // Update biaya jasa dan sesuaikan total tagihan akhirnya
         $service->service_cost = $newCost;
         $service->total_cost = ($service->total_cost - $oldCost) + $newCost;
+
+        if ($service->status === 'pending' && $newCost > 0) {
+            $service->status = 'processing';
+        }
+
         $service->save();
 
         return redirect()->back()->with('success', 'Biaya jasa mekanik berhasil diperbarui.');

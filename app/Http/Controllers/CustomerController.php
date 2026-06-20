@@ -15,11 +15,15 @@ class CustomerController extends Controller
     {
         $search = $request->search;
 
-        // Mencari berdasarkan nama atau nomor HP
-        $customers = Customer::when($search, function ($query, $search) {
+        // Gunakan with('user') untuk memanggil email, 
+        // dan tambahkan logika orWhereHas agar admin bisa mencari berdasarkan email.
+        $customers = Customer::with('user')->when($search, function ($query, $search) {
             return $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('phone_number', 'like', "%{$search}%");
-        })->latest()->get();
+                        ->orWhere('phone_number', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('email', 'like', "%{$search}%");
+                        });
+        })->latest()->paginate(10);
 
         return view('admin.customers.index', compact('customers'));
     }
@@ -31,12 +35,52 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validasi Input Akun Baru dengan Custom Rule Domain & WhatsApp Ketat
         $request->validate([
             'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users',
+            'email'        => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:users,email',
+                function ($attribute, $value, $fail) {
+                    $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+                    $domain = explode('@', $value)[1] ?? '';
+                    if (!in_array(strtolower($domain), $allowedDomains)) {
+                        $fail('Pendaftaran hanya diizinkan menggunakan email Gmail, Yahoo, Outlook, atau iCloud.');
+                    }
+                },
+            ],
             'password'     => 'required|string|min:6',
-            'phone_number' => 'required|string|unique:customers',
+            // ATURAN NOMOR WHATSAPP (STORE)
+            'phone_number' => [
+                'bail',
+                'required',
+                'string',
+                'regex:/^(08|628|\+628|8)[0-9]*$/',
+                'min:10',
+                'max:15',
+                'unique:customers,phone_number'
+            ],
             'address'      => 'required|string'
+        ], [
+            // KAMUS ERROR
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format email tidak valid (harus mengandung @).',
+            'email.unique' => 'Email ini sudah terdaftar di sistem kami.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter.',
+            
+            // Kamus Error Nomor WhatsApp
+            'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone_number.regex' => 'Format nomor tidak valid. Gunakan HANYA ANGKA (tanpa spasi/simbol - . *) and awali dengan 08 atau 628 atau +62 atau 8.',
+            'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
+            'phone_number.max' => 'Nomor terlalu panjang. Maksimal 15 angka.',
+            'phone_number.unique' => 'Nomor WhatsApp ini sudah terdaftar.',
+            
+            'address.required' => 'Alamat domisili wajib diisi.',
         ]);
 
         DB::beginTransaction();
@@ -73,20 +117,25 @@ class CustomerController extends Controller
     }
 
     /**
-     * Fungsi Bantuan untuk mengirim WA Sambutan
+     * Fungsi untuk mengirim welcome message via WhatsApp menggunakan API Fonnte.
      */
     private function kirimWelcomeWA($phone, $name)
     {
         try {
             $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-            
-            $pesan = "Halo *{$name}*, selamat datang di MJ MotoPerformance! 🏍️💨\n\n";
+            if (substr($cleanPhone, 0, 1) == '0') {
+            $cleanPhone = '62' . substr($cleanPhone, 1);
+            } elseif (substr($cleanPhone, 0, 1) == '8') {
+                $cleanPhone = '62' . $cleanPhone;
+            }
+
+            $pesan = "Halo *{$name}*, selamat datang di MJ MotoPerformance!\n\n";
             $pesan .= "Terima kasih telah bergabung. Akun Anda telah berhasil didaftarkan di sistem kami.\n\n";
             $pesan .= "Mulai sekarang, segala informasi mengenai *Update Status Pengerjaan* dan *Rincian Tagihan Servis* kendaraan Anda akan dikirimkan secara otomatis melalui nomor WhatsApp ini.\n\n";
             $pesan .= "Anda juga dapat memantau riwayat servis melalui Aplikasi Mobile kami. Jika ada pertanyaan, jangan ragu untuk membalas pesan ini!\n\n";
             $pesan .= "Salam hangat,\n*Tim MJ MotoPerformance*";
 
-            // Tembak API Fonnte secara diam-diam (background)
+            // Tembak API Fonnte (background)
             Http::withHeaders([
                 'Authorization' => env('FONNTE_TOKEN') 
             ])->post('https://api.fonnte.com/send', [
@@ -94,12 +143,9 @@ class CustomerController extends Controller
                 'message' => $pesan,
                 'countryCode' => '62',
             ]);
-            
-            // Catatan: Di sini kita tidak me-return error jika WA gagal. 
-            // Kenapa? Agar jika Fonnte sedang down, akun pelanggan tetap berhasil terbuat di database.
 
         } catch (\Exception $e) {
-            // Biarkan kosong agar tidak mengganggu proses pendaftaran
+
         }
     }
 
@@ -108,20 +154,35 @@ class CustomerController extends Controller
         return view('admin.customers.edit', compact('customer'));
     }
 
-    
     public function update(Request $request, Customer $customer)
     {
-        // 1. Validasi input
+        // 1. Validasi Input Update dengan Aturan WhatsApp
         $request->validate([
-            'name' => 'required',
-            'phone_number' => 'required|unique:customers,phone_number,' . $customer->id,
-            'address' => 'nullable|string' // Tambahkan ini jika di form edit admin ada isian alamat
+            'name' => 'required|string|max:255',
+            'phone_number' => [
+                'bail',
+                'required',
+                'string',
+                'regex:/^(08|628|\+628|8)[0-9]*$/',
+                'min:10',
+                'max:15',
+                'unique:customers,phone_number,' . $customer->id
+            ],
+            'address' => 'nullable|string' 
+        ], [
+            // Kamus Error untuk Update
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone_number.regex' => 'Format nomor tidak valid. Gunakan HANYA ANGKA (tanpa spasi/simbol - . *) and awali dengan 08 atau 628 atau +62 atau 8.',
+            'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
+            'phone_number.max' => 'Nomor terlalu panjang. Maksimal 15 angka.',
+            'phone_number.unique' => 'Nomor WhatsApp ini sudah terdaftar.',
         ]);
 
         // 2. Update data profil pelanggan (Tabel customers)
         $customer->update($request->all());
 
-        // 3. SINKRONISASI PENTING: Ikut ubah nama di tabel Users agar di React juga berubah!
+        // 3. Ikut ubah nama di tabel Users agar di React juga berubah
         if ($customer->user_id) {
             \App\Models\User::where('id', $customer->user_id)->update([
                 'name' => $request->name 
@@ -131,8 +192,7 @@ class CustomerController extends Controller
         return redirect()->route('admin.customers.index')->with('success', 'Data pelanggan dan akun login berhasil diperbarui sinkron.');
     }
 
-
-    // Fungsi untuk menghapus pelanggan di Laravel Web
+    // Hapus Pelanggan beserta Akun Login-nya, dengan Penanganan Error jika Masih Ada Kendaraan Terkait
     public function destroy($id)
     {
         try {
@@ -145,21 +205,18 @@ class CustomerController extends Controller
             // 3. Hapus profil pelanggannya (Tabel customers)
             $customer->delete();
 
-            // 4. Hapus akun loginnya (Tabel users) agar tidak jadi "hantu"
+            // 4. Hapus akun loginnya (Tabel users)
             if ($userId) {
                 \App\Models\User::where('id', $userId)->delete();
             }
 
-            // Jika sukses, kembalikan dengan pesan hijau
             return redirect()->back()->with('success', 'Akun pelanggan dan data login berhasil dihapus total!');
 
         } catch (\Illuminate\Database\QueryException $e) {
-            // Jika muncul error database (kode 23000), berarti pelanggan ini masih punya kendaraan
             if ($e->getCode() == 23000) {
                 return redirect()->back()->with('error', 'Gagal menghapus! Pelanggan ini masih memiliki data kendaraan. Harap hapus kendaraannya terlebih dahulu.');
             }
             
-            // Error lainnya
             return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus data.');
         }
     }

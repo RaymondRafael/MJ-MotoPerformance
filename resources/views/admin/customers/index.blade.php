@@ -10,7 +10,7 @@
         
         <div class="flex items-center gap-3 w-full md:w-auto">
             <form action="{{ route('admin.customers.index') }}" method="GET" class="flex w-full md:w-auto">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Nama atau WA..." 
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Nama, WA, atau Email..." 
                     class="px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-red-500 focus:border-red-500 text-sm w-full md:w-64">
                 <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-r-lg border border-l-0 border-gray-300 transition">
                     <i class="fas fa-search"></i>
@@ -39,7 +39,7 @@
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-white border-b border-gray-100 text-xs uppercase text-gray-500">
-                    <th class="p-4 font-bold">Nama Pelanggan</th>
+                    <th class="p-4 font-bold">Profil Pelanggan</th>
                     <th class="p-4 font-bold">No. WhatsApp</th>
                     <th class="p-4 font-bold">Alamat</th>
                     <th class="p-4 font-bold text-center">Aksi</th>
@@ -48,7 +48,12 @@
             <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
                 @forelse($customers as $customer)
                 <tr class="hover:bg-gray-50 transition">
-                    <td class="p-4 font-bold text-gray-900">{{ $customer->name }}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-gray-900">{{ $customer->name }}</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-envelope text-gray-400 mr-1"></i> {{ $customer->user->email ?? 'Email tidak tertaut' }}
+                        </div>
+                    </td>
                     <td class="p-4"><i class="fab fa-whatsapp text-green-500 mr-1"></i> {{ $customer->phone_number }}</td>
                     <td class="p-4">{{ $customer->address ?? '-' }}</td>
                     <td class="p-4 text-center flex justify-center space-x-2">
@@ -67,5 +72,11 @@
             </tbody>
         </table>
     </div>
+
+    @if($customers->hasPages())
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            {{ $customers->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection

@@ -16,10 +16,11 @@ class DashboardController extends Controller
         $selectedMonth = $request->query('month', Carbon::now()->month);
         $selectedYear = $request->query('year', Carbon::now()->year);
 
-        // 2. Pendapatan (Menggunakan 'total_cost' sesuai database Anda)
-        $pendapatan = Service::where('status', 'finished')
-                            ->whereMonth('created_at', $selectedMonth)
-                            ->whereYear('created_at', $selectedYear)
+        // 2. Pendapatan (Hitung yang statusnya finished ATAU lunas)
+        // 'updated_at' agar uang masuk dihitung berdasarkan bulan saat nota dilunasi
+        $pendapatan = Service::whereIn('status', ['finished', 'lunas'])
+                            ->whereMonth('updated_at', $selectedMonth)
+                            ->whereYear('updated_at', $selectedYear)
                             ->sum('total_cost');
 
         // 3. Antrean Servis (Yang masuk pada bulan & tahun tersebut)
@@ -28,8 +29,8 @@ class DashboardController extends Controller
                             ->whereYear('created_at', $selectedYear)
                             ->count();
 
-        // 4. Servis Selesai (Menggunakan 'updated_at' sesuai logika Anda)
-        $selesaiPeriode = Service::where('status', 'finished')
+        // 4. Servis Selesai (Hitung yang statusnya finished ATAU lunas)
+        $selesaiPeriode = Service::whereIn('status', ['finished', 'lunas'])
                                 ->whereMonth('updated_at', $selectedMonth)
                                 ->whereYear('updated_at', $selectedYear)
                                 ->count();
@@ -39,7 +40,7 @@ class DashboardController extends Controller
                                 ->whereYear('created_at', $selectedYear)
                                 ->count();
 
-        // 6. 5 Antrean Teratas (Di-map agar formatnya persis dengan yang diminta React)
+        // 6. 5 Antrean Teratas 
         $antreanTerbaru = Service::with(['vehicle.customer'])
                                 ->whereIn('status', ['pending', 'processing'])
                                 ->orderBy('created_at', 'asc')
@@ -49,14 +50,13 @@ class DashboardController extends Controller
                                     return [
                                         'id' => $item->id,
                                         'waktu' => $item->created_at->diffForHumans(),
-                                        // Hati-hati: pastikan nama kolom di DB Anda benar 'license_plate'
                                         'plat' => $item->vehicle->license_plate ?? 'Tidak Diketahui',
                                         'pelanggan' => $item->vehicle->customer->name ?? 'Tidak Diketahui',
                                         'status' => $item->status,
                                     ];
                                 });
 
-        // 7. Kembalikan semua data dalam format JSON
+        // 7. Kembalikan semua data
         return response()->json([
             'success' => true,
             'data' => [

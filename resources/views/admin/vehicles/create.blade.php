@@ -23,7 +23,24 @@
         </div>
     </div>
 
-    <form action="{{ route('admin.vehicles.store') }}" method="POST" class="space-y-6">
+    @if($errors->any())
+    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-fade-in-down">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-bold text-red-800">Gagal Menyimpan Data!</h3>
+                <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    </div>
+    @endif
+    <form action="{{ route('admin.vehicles.store') }}" method="POST" class="space-y-6" novalidate>
         @csrf
         
         <div class="relative z-30">
@@ -42,17 +59,33 @@
             </div>
 
             <div id="menu_customer" class="hidden absolute top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50">
-                <div class="max-h-60 overflow-y-auto custom-scrollbar py-2">
+                
+                <div class="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-search text-xs"></i>
+                        </div>
+                        <input type="text" id="search_customer" class="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-red-100 focus:border-red-400 outline-none transition-all" placeholder="Ketik nama atau nomor WA..." autocomplete="off" onclick="event.stopPropagation()">
+                    </div>
+                </div>
+
+                <div class="max-h-60 overflow-y-auto custom-scrollbar py-2" id="customer_list">
                     @foreach($customers as $customer)
-                        <div class="px-5 py-3 hover:bg-red-50 cursor-pointer transition-colors group border-b border-gray-50 last:border-0 flex items-center gap-3" 
-                             onclick="selectOption('customer', '{{ $customer->id }}', '{{ $customer->name }}')">
+                        <div class="customer-item px-5 py-3 hover:bg-red-50 cursor-pointer transition-colors group border-b border-gray-50 last:border-0 flex items-center gap-3" 
+                             onclick="selectOption('customer', '{{ $customer->id }}', '{{ addslashes($customer->name) }}')">
                             <div class="w-2 h-2 rounded-full bg-gray-300 group-hover:bg-red-500 transition-colors"></div>
                             <div>
-                                <p class="font-bold text-gray-800 group-hover:text-red-600 transition-colors">{{ $customer->name }}</p>
-                                <p class="text-xs text-gray-500 font-medium"><i class="fab fa-whatsapp mr-1"></i> {{ $customer->phone_number }}</p>
+                                <p class="font-bold text-gray-800 group-hover:text-red-600 transition-colors customer-name">{{ $customer->name }}</p>
+                                <p class="text-xs text-gray-500 font-medium customer-phone"><i class="fab fa-whatsapp mr-1"></i> {{ $customer->phone_number }}</p>
                             </div>
                         </div>
                     @endforeach
+                    
+                    <div id="no_customer_found" class="hidden px-5 py-6 text-center">
+                        <i class="fas fa-search-minus text-gray-300 text-2xl mb-2"></i>
+                        <p class="text-sm font-bold text-gray-500">Pelanggan tidak ditemukan.</p>
+                        <a href="{{ route('admin.customers.create') }}" class="text-xs text-blue-500 hover:underline mt-1 block">Tambah Pelanggan Baru?</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -63,7 +96,7 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                     <i class="fas fa-id-badge"></i>
                 </div>
-                <input type="text" name="license_plate" required placeholder="Contoh: D 1234 ABC"
+                <input type="text" name="license_plate" required placeholder="Contoh: D 1234 ABC" value="{{ old('license_plate') }}"
                     class="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-black text-gray-800 uppercase tracking-widest">
             </div>
         </div>
@@ -75,7 +108,7 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-industry"></i>
                     </div>
-                    <input type="text" name="brand" required placeholder="Contoh: Honda"
+                    <input type="text" name="brand" required placeholder="Contoh: Honda" value="{{ old('brand') }}"
                         class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
                 </div>
             </div>
@@ -86,18 +119,18 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-motorcycle"></i>
                     </div>
-                    <input type="text" name="model" required placeholder="Contoh: Vario 150"
+                    <input type="text" name="model" required placeholder="Contoh: Vario 150" value="{{ old('model') }}"
                         class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Warna</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Warna<span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-palette"></i>
                     </div>
-                    <input type="text" name="color" placeholder="Contoh: Hitam Matte"
+                    <input type="text" name="color" placeholder="Contoh: Hitam Matte" value="{{ old('color') }}"
                         class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all outline-none font-bold text-gray-800 capitalize">
                 </div>
             </div>
@@ -122,6 +155,7 @@
         const menu = document.getElementById(menuId);
         const trigger = document.getElementById(triggerId);
         const icon = trigger.querySelector('.fa-chevron-down');
+        const searchInput = document.getElementById('search_customer');
 
         if (activeDropdownMenu === menu) {
             closeDropdowns();
@@ -137,6 +171,10 @@
         
         activeDropdownMenu = menu;
         activeDropdownTrigger = trigger;
+
+        setTimeout(() => {
+            searchInput.focus();
+        }, 50);
     }
 
     function closeDropdowns() {
@@ -150,31 +188,63 @@
                 icon.classList.remove('rotate-180', 'text-red-500');
             }
 
+            const searchInput = document.getElementById('search_customer');
+            if(searchInput) {
+                searchInput.value = '';
+                filterCustomers('');
+            }
+
             activeDropdownMenu = null;
             activeDropdownTrigger = null;
         }
     }
 
     function selectOption(type, value, label) {
-        // 1. Masukkan nilai ke input tersembunyi
         document.getElementById(`hidden_${type}_id`).value = value;
         
-        // 2. Ubah teks label di kotak dropdown
         const labelElement = document.getElementById(`label_${type}`);
         labelElement.innerText = label;
         labelElement.classList.remove('text-gray-400');
         labelElement.classList.add('text-gray-900', 'font-black');
 
-        // 3. Ubah warna ikon di sebelah kiri label
         const iconBox = document.getElementById(`icon_box_${type}`);
         iconBox.classList.remove('bg-gray-200', 'text-gray-500');
         iconBox.classList.add('bg-red-100', 'text-red-600');
 
-        // 4. Tutup dropdown
         closeDropdowns();
     }
 
-    // Menutup dropdown jika user mengklik area di luar dropdown
+    document.getElementById('search_customer').addEventListener('input', function(e) {
+        filterCustomers(e.target.value);
+    });
+
+    function filterCustomers(keyword) {
+        const query = keyword.toLowerCase();
+        const items = document.querySelectorAll('.customer-item');
+        let hasVisibleItem = false;
+
+        items.forEach(item => {
+            const name = item.querySelector('.customer-name').innerText.toLowerCase();
+            const phone = item.querySelector('.customer-phone').innerText.toLowerCase();
+            
+            if (name.includes(query) || phone.includes(query)) {
+                item.classList.remove('hidden');
+                item.classList.add('flex');
+                hasVisibleItem = true;
+            } else {
+                item.classList.remove('flex');
+                item.classList.add('hidden');
+            }
+        });
+
+        const noFoundMsg = document.getElementById('no_customer_found');
+        if (!hasVisibleItem && query !== '') {
+            noFoundMsg.classList.remove('hidden');
+        } else {
+            noFoundMsg.classList.add('hidden');
+        }
+    }
+
     document.addEventListener('click', function(event) {
         if (activeDropdownMenu && !activeDropdownTrigger.contains(event.target) && !activeDropdownMenu.contains(event.target)) {
             closeDropdowns();

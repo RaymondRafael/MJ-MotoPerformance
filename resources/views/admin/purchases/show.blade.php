@@ -77,7 +77,12 @@
                                     <div class="w-2 h-2 rounded-full bg-gray-300 mt-2 group-hover:bg-red-400 transition-colors"></div>
                                     <div class="flex flex-col">
                                         @if($detail->sparepart)
-                                            <span class="font-bold text-gray-800 text-base">{{ $detail->sparepart->name }}</span>
+                                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                                                <span class="font-bold text-gray-800 text-base">{{ $detail->sparepart->name }}</span>
+                                                <span class="w-max text-[9px] uppercase tracking-widest bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">
+                                                    {{ $detail->sparepart->category ?? 'Lainnya' }}
+                                                </span>
+                                            </div>
                                         @else
                                             <span class="font-bold text-gray-500 text-base line-through opacity-70" title="Nama Historis">{{ $detail->historical_name }}</span>
                                             <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5"><i class="fas fa-exclamation-triangle"></i> Dihapus dari Master Inventaris</span>

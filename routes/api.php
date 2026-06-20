@@ -12,9 +12,9 @@ use App\Http\Controllers\Api\PasswordResetController;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
-// Rute untuk Lupa & Reset Password (Menggunakan Controller Baru)
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
-Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update');
+// Rute untuk Lupa & Reset Password
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 
 // --- Rute Terlindungi (Wajib Memiliki Token) ---

@@ -56,13 +56,13 @@
 
             <div>
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <i class="fas fa-key text-blue-500"></i> Akun Aplikasi Mobile
+                    <i class="fas fa-key text-blue-500"></i> Akun Aplikasi
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="relative">
                         <label for="email" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Akun <span class="text-red-500">*</span></label>
                         <div class="absolute top-[34px] left-4 text-gray-400"><i class="fas fa-envelope"></i></div>
-                        <input type="email" name="email" id="email" value="{{ old('email') }}" required placeholder="email@contoh.com"
+                        <input type="email" name="email" id="email" value="{{ old('email') }}" required placeholder="email@gmail.com"
                             class="w-full pl-11 pr-4 py-4 bg-gray-50 border @error('email') border-red-500 @else border-gray-200 @enderror rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800">
                         @error('email') <p class="text-red-500 text-[10px] font-bold mt-1 ml-1 uppercase">{{ $message }}</p> @enderror
                     </div>

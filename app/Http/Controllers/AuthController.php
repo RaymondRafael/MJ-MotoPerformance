@@ -22,9 +22,19 @@ class AuthController extends Controller
     // Memproses permintaan Login
     public function login(Request $request)
     {
-        // 1. Validasi inputan form
+        // 1. Validasi inputan form dengan Custom Rule Domain
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+                    $domain = explode('@', $value)[1] ?? '';
+                    if (!in_array(strtolower($domain), $allowedDomains)) {
+                        $fail('Domain email tidak didukung. Gunakan Gmail, Yahoo, atau Outlook.');
+                    }
+                },
+            ],
             'password' => 'required'
         ]);
 
@@ -34,9 +44,9 @@ class AuthController extends Controller
             // Hindari serangan pencurian sesi (Session Fixation)
             $request->session()->regenerate();
 
-            // 3. LOGIKA REDIRECTION BERDASARKAN ROLE
+            // 3. REDIRECT BERDASARKAN ROLE
             if (Auth::user()->role === 'admin') {
-                // Jika yang login adalah Admin, lempar ke Dasbor Statistik
+                // Jika yang login adalah Admin, lempar ke Dasbor Admin
                 return redirect()->route('admin.dashboard')->with('success', 'Selamat datang kembali, Admin!');
             } else {
                 // Jika yang login adalah Pelanggan, lempar ke Tracking Servis
@@ -71,10 +81,44 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone_number' => 'required|string|unique:customers,phone_number',
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email',
+                function ($attribute, $value, $fail) {
+                    $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+                    $domain = explode('@', $value)[1] ?? '';
+                    if (!in_array(strtolower($domain), $allowedDomains)) {
+                        $fail('Pendaftaran hanya diizinkan menggunakan email Gmail, Yahoo, Outlook, atau iCloud.');
+                    }
+                },
+            ],
+            // ATURAN NOMOR WHATSAPP (WEB)
+            'phone_number' => [
+                'bail',
+                'required',
+                'string',
+                'regex:/^(08|628|\+628|8)[0-9]*$/',
+                'min:10',
+                'max:15',
+                'unique:customers,phone_number'
+            ],
             'address' => 'nullable|string', 
             'password' => 'required|min:6|confirmed', 
+        ], [
+            // KAMUS ERROR
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format email tidak valid (harus mengandung @).',
+            'email.unique' => 'Email ini sudah terdaftar di sistem kami.',
+            'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone_number.regex' => 'Format nomor tidak valid. Gunakan HANYA ANGKA (tanpa spasi/simbol - . *) dan awali dengan 08 atau 628.',
+            'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
+            'phone_number.max' => 'Nomor terlalu panjang. Maksimal 15 angka.',
+            'phone_number.unique' => 'Nomor WhatsApp ini sudah terdaftar.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.'
         ]);
 
         $user = User::create([
@@ -91,48 +135,12 @@ class AuthController extends Controller
             'address' => $request->address, 
         ]);
 
-        // PASTIKAN BARIS INI ADA! Ini yang menyuruh sistem mengirim WA
+        // Sistem mengirim WA
         $this->kirimWelcomeWA($request->phone_number, $request->name, 'Website');
 
         Auth::login($user);
 
         return redirect('/tracking')->with('success', 'Registrasi berhasil! Selamat datang di MJ MotoPerformance.');
-    }
-
-
-    // Memproses data registrasi dari React (API)
-    public function apiRegister(Request $request)
-    {
-        // 1. Validasi Input (Tambahkan address)
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone_number' => 'required|string|unique:customers,phone_number',
-            'address' => 'nullable|string', // <-- Tambahkan validasi alamat (nullable = boleh kosong)
-            'password' => 'required|min:8|confirmed',
-        ]);
-
-        // 2. Buat Akun Login (Tabel users)
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'customer', 
-        ]);
-
-        // 3. Buat Profil Pelanggan (Tabel customers - Tambahkan address)
-        Customer::create([
-            'user_id' => $user->id,
-            'name' => $request->name,
-            'phone_number' => $request->phone_number,
-            'address' => $request->address, // <-- Simpan inputan alamat dari React ke database
-        ]);
-
-        // 4. Kembalikan respons JSON
-        return response()->json([
-            'success' => true,
-            'message' => 'Registrasi berhasil! Silakan login.'
-        ], 201);
     }
 
 
@@ -190,7 +198,7 @@ class AuthController extends Controller
     }
 
     
-    // FUNGSI BANTUAN UNTUK MENGIRIM WA (DENGAN JEBAKAN TOTAL)
+    // FUNGSI UNTUK MENGIRIM WA
     private function kirimWelcomeWA($phone, $name, $platform)
     {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
@@ -200,7 +208,7 @@ class AuthController extends Controller
             $cleanPhone = '62' . $cleanPhone;
         }
 
-        $pesan = "Halo *{$name}*, selamat datang di MJ MotoPerformance! 🏍️💨\n\n";
+        $pesan = "Halo *{$name}*, selamat datang di MJ MotoPerformance!\n\n";
         $pesan .= "Terima kasih telah bergabung. Akun Anda telah berhasil didaftarkan di sistem kami.\n\n";
         $pesan .= "Mulai sekarang, segala informasi mengenai *Update Status Pengerjaan* dan *Rincian Tagihan Servis* kendaraan Anda akan dikirimkan secara otomatis melalui nomor WhatsApp ini.\n\n";
         $pesan .= "Anda juga dapat memantau riwayat servis melalui Aplikasi Mobile kami. Jika ada pertanyaan, jangan ragu untuk membalas pesan ini!\n\n";

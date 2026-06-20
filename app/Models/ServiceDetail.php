@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ServiceDetail extends Model
 {
     protected $fillable = [
-        'service_id', 'sparepart_id', 'quantity', 'price', 'subtotal'
+        'service_id', 'sparepart_id', 'historical_name', 'quantity', 'price', 'subtotal'
     ];
 
     // Relasi balik: Detail ini masuk ke nota Servis yang mana?

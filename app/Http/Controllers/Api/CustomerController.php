@@ -9,6 +9,7 @@ use App\Models\Service;
 
 class CustomerController extends Controller
 {
+    // Menampilkan data pelanggan beserta riwayat servis untuk tampilan "Garasi Saya" di aplikasi mobile
     public function myGarage(Request $request)
     {
         $user = $request->user();
@@ -29,19 +30,19 @@ class CustomerController extends Controller
                 $query->where('customer_id', $customer->id);
             });
 
-        // 3. AMBIL DATA AKTIF (WAJIB TAMPIL, Mengabaikan Filter Waktu)
+        // 3. AMBIL DATA AKTI
         $activeServices = (clone $baseQuery)
             ->whereIn('status', ['pending', 'processing'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 4. AMBIL DATA RIWAYAT (DITERAPKAN FILTER WAKTU)
+        // 4. AMBIL DATA RIWAYAT
         $historyQuery = (clone $baseQuery)->whereIn('status', ['finished', 'lunas', 'completed', 'paid']);
         
         // Jika ada filter bulan & tahun, terapkan ke Riwayat
         if ($month && $year) {
             $historyQuery->whereMonth('created_at', $month)
-                         ->whereYear('created_at', $year);
+                        ->whereYear('created_at', $year);
         }
 
         $historyServices = $historyQuery->orderBy('updated_at', 'desc')->get();
@@ -69,19 +70,26 @@ class CustomerController extends Controller
                 'history' => $historyServices->map(function($service) {
                     return [
                         'id' => $service->id,
+                        
+                        // Mengirimkan status agar badge bisa berubah jadi Ungu (Lunas)
+                        'status' => $service->status, 
+                        
                         'tanggal' => $service->created_at ? $service->created_at->format('d M Y') : '-',
                         'keluhan' => $service->complaint,
-                        'mekanik' => $service->mechanic?->name ?? 'Belum ada',
-                        'biaya' => (float) ($service->total_cost ?? 0),
                         
+                        // Pisahkan mekanik aktif dan mekanik historis
+                        'mekanik' => $service->mechanic?->name, 
+                        'historical_mechanic_name' => $service->historical_mechanic_name,
+                        
+                        'biaya' => (float) ($service->total_cost ?? 0),
                         'jasa_servis' => (float) ($service->service_cost ?? 0),
+                        
                         'rincian_suku_cadang' => $service->details->map(function($detail) {
                             return [
-                                // PERBAIKAN LOGIKA SNAPSHOT: 
-                                // Jika barang asli masih ada, pakai nama asli. Jika tidak ada, pakai nama historis.
-                                'nama' => $detail->sparepart 
-                                            ? $detail->sparepart->name 
-                                            : ($detail->historical_name ?? 'Suku Cadang (Discontinue)'),
+                                // [PERBAIKAN 3]: Pisahkan barang aktif dan barang historis
+                                'nama' => $detail->sparepart?->name, 
+                                'historical_name' => $detail->historical_name, 
+                                
                                 'qty' => $detail->quantity,
                                 'subtotal' => (float) ($detail->subtotal ?? 0),
                             ];

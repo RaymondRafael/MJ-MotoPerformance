@@ -61,5 +61,11 @@
             </tbody>
         </table>
     </div>
+
+    @if($vehicles->hasPages())
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            {{ $vehicles->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection

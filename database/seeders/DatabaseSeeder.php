@@ -10,12 +10,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Hanya buat 1 Akun Admin / Owner
-        User::create([
-            'name' => 'Administrator MJ',
-            'email' => 'admin@mjmoto.com',
-            'password' => Hash::make('12345'),
-            'role' => 'admin',
-        ]);
+        // Cari user dengan email ini. Jika ada, update. Jika tidak, buat baru.
+        User::updateOrCreate(
+            ['email' => 'admin.mjmoto@gmail.com'], // Kunci pencarian
+            [
+                'name' => 'Administrator MJ',
+                'password' => Hash::make('12345'),
+                'role' => 'admin',
+            ]
+        );
     }
 }

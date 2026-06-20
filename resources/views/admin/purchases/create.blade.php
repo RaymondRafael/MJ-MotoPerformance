@@ -68,7 +68,7 @@
                 <div class="flex flex-col lg:flex-row gap-6">
                     
                     <div class="w-full lg:w-[20%]">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Kategori Barang</label>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Mode Input</label>
                         <div class="relative custom-dropdown" data-type="mode">
                             <input type="hidden" name="items[0][mode]" class="mode-input" value="existing">
                             
@@ -102,7 +102,7 @@
                             <div class="relative custom-dropdown" data-type="sparepart">
                                 <input type="hidden" name="items[0][sparepart_id]" class="sparepart-input" value="">
 
-                                <div class="dropdown-trigger w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-white transition-all group" onclick="toggleCustomDropdown(this)">
+                                <div class="dropdown-trigger w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-white transition-all group" onclick="toggleCustomDropdown(this, true)">
                                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                                         <i class="fas fa-cogs"></i>
                                     </div>
@@ -113,23 +113,49 @@
                                 </div>
 
                                 <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden">
-                                    <div class="max-h-60 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                                    
+                                    <div class="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fas fa-search text-xs"></i>
+                                            </div>
+                                            <input type="text" class="search-input w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all" placeholder="Cari nama atau kategori..." autocomplete="off" oninput="filterDropdownList(this)" onclick="event.stopPropagation()">
+                                        </div>
+                                    </div>
+
+                                    <div class="dropdown-list-container max-h-60 overflow-y-auto custom-scrollbar p-2 space-y-1">
                                         <div class="px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors font-bold text-gray-400 flex items-center gap-3" onclick="selectCustomOption(this, '', '-- Pilih Suku Cadang --')">
                                             -- Batal Memilih --
                                         </div>
                                         @foreach($spareparts as $sp)
-                                            <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors flex items-center justify-between group/item" onclick="selectCustomOption(this, '{{ $sp->id }}', '{{ addslashes($sp->name) }}')">
+                                            <div class="dropdown-item px-4 py-3 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors flex items-center justify-between group/item" onclick="selectCustomOption(this, '{{ $sp->id }}', '{{ addslashes($sp->name) }}')">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover/item:bg-blue-100 group-hover/item:text-blue-500 transition-colors">
                                                         <i class="fas fa-wrench text-xs"></i>
                                                     </div>
                                                     <div>
-                                                        <p class="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors">{{ $sp->name }}</p>
-                                                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">Stok Saat Ini: <span class="text-blue-500">{{ $sp->stock }}</span></p>
+                                                        <div class="flex items-center gap-2 mb-0.5">
+                                                            <p class="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors item-name">
+                                                                {{ $sp->name }}
+                                                            </p>
+                                                            <span class="item-category text-[9px] uppercase tracking-widest bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold">
+                                                                {{ $sp->category ?? 'Lainnya' }}
+                                                            </span>
+                                                        </div>
+                                                        @if($sp->stock <= 5)
+                                                            <p class="text-[10px] text-red-500 uppercase tracking-widest font-black mt-0.5"><i class="fas fa-exclamation-triangle mr-1"></i> Stok Menipis: {{ $sp->stock }}</p>
+                                                        @else
+                                                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">Stok Saat Ini: <span class="text-blue-500">{{ $sp->stock }}</span></p>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
                                         @endforeach
+                                        
+                                        <div class="no-item-found hidden px-5 py-6 text-center">
+                                            <i class="fas fa-search-minus text-gray-300 text-2xl mb-2"></i>
+                                            <p class="text-sm font-bold text-gray-500">Barang tidak ditemukan.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -147,10 +173,38 @@
                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Merek</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400"><i class="fas fa-tag text-xs"></i></div>
-                                    <input type="text" name="items[0][new_brand]" placeholder="Shell" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
+                                    <input type="text" name="items[0][brand]" placeholder="Shell" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
                                 </div>
                             </div>
+                            
                             <div class="relative">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Kategori <span class="text-red-500">*</span></label>
+                                <div class="relative custom-dropdown" data-type="category">
+                                    <input type="hidden" name="items[0][new_category]" class="category-input" value="{{ $categories[0] ?? 'Oli' }}">
+                                    
+                                    <div class="dropdown-trigger w-full pl-11 pr-10 py-3 bg-white border border-blue-200 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all group" onclick="toggleCustomDropdown(this)">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+                                            <i class="fas fa-tags text-xs"></i>
+                                        </div>
+                                        <span class="text-sm font-black text-gray-700 selected-label truncate">{{ $categories[0] ?? 'Oli' }}</span>
+                                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-blue-400 transition-transform duration-300 arrow-icon">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="dropdown-menu hidden absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+                                        <div class="p-2 space-y-1">
+                                            @foreach($categories as $cat)
+                                                <div class="px-4 py-2.5 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors font-bold text-gray-800 text-xs flex items-center gap-3" onclick="selectCustomOption(this, '{{ $cat }}', '{{ $cat }}')">
+                                                    {{ $cat }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 relative">
                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Harga Jual Nanti</label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-3 text-blue-400 text-xs font-bold">Rp</span>
@@ -158,6 +212,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <div class="w-full lg:flex-1 grid grid-cols-3 gap-4">
@@ -211,25 +266,29 @@
     let rowCount = 1;
     let activeDropdownMenu = null;
 
-    // FUNGSI UNTUK DROPDOWN KUSTOM
-    function toggleCustomDropdown(trigger) {
+    function toggleCustomDropdown(trigger, focusSearch = false) {
         const menu = trigger.nextElementSibling;
         const arrow = trigger.querySelector('.arrow-icon');
         const row = trigger.closest('.item-row');
 
-        // Tutup dropdown lain yang sedang terbuka
         if (activeDropdownMenu && activeDropdownMenu !== menu) {
             closeAllDropdowns();
         }
 
         if (menu.classList.contains('hidden')) {
-            // Angkat z-index row yang aktif agar menu tidak tertutup row di bawahnya
             document.querySelectorAll('.item-row').forEach(r => r.style.zIndex = '10');
             row.style.zIndex = '50';
 
             menu.classList.remove('hidden');
-            arrow.classList.add('rotate-180', 'text-blue-500');
+            if(arrow) arrow.classList.add('rotate-180', 'text-blue-500');
             activeDropdownMenu = menu;
+
+            if (focusSearch) {
+                const searchInput = menu.querySelector('.search-input');
+                if (searchInput) {
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+            }
         } else {
             closeAllDropdowns();
         }
@@ -238,6 +297,11 @@
     function closeAllDropdowns() {
         document.querySelectorAll('.dropdown-menu').forEach(menu => {
             menu.classList.add('hidden');
+            const searchInput = menu.querySelector('.search-input');
+            if(searchInput) {
+                searchInput.value = '';
+                filterDropdownList(searchInput);
+            }
         });
         document.querySelectorAll('.arrow-icon').forEach(arrow => {
             arrow.classList.remove('rotate-180', 'text-blue-500');
@@ -246,7 +310,6 @@
         activeDropdownMenu = null;
     }
 
-    // Menutup dropdown jika user mengklik area di luar dropdown
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.custom-dropdown')) {
             closeAllDropdowns();
@@ -260,11 +323,9 @@
         const labelDisplay = trigger.querySelector('.selected-label');
         const type = dropdownContainer.getAttribute('data-type');
 
-        // 1. Update Nilai Input Hidden
         hiddenInput.value = value;
-        
-        // 2. Update Teks Label
         labelDisplay.innerText = labelText;
+        
         if(value !== '') {
             labelDisplay.classList.remove('text-gray-400');
             labelDisplay.classList.add('text-gray-900');
@@ -275,7 +336,6 @@
             trigger.classList.remove('border-blue-300', 'bg-white');
         }
 
-        // 3. Jika Mode berubah, jalankan logika tampilan form
         if (type === 'mode') {
             applyModeStyles(dropdownContainer, value);
         }
@@ -294,8 +354,6 @@
         if (mode === 'new') {
             existingFields.classList.add('hidden');
             newFields.classList.remove('hidden');
-            
-            // Style Warna Hijau
             trigger.classList.remove('bg-blue-50/50', 'border-blue-100');
             trigger.classList.add('bg-green-50/50', 'border-green-200');
             iconLeft.classList.replace('text-blue-500', 'text-green-500');
@@ -303,8 +361,6 @@
         } else {
             existingFields.classList.remove('hidden');
             newFields.classList.add('hidden');
-            
-            // Style Warna Biru
             trigger.classList.remove('bg-green-50/50', 'border-green-200');
             trigger.classList.add('bg-blue-50/50', 'border-blue-100');
             iconLeft.classList.replace('text-green-500', 'text-blue-500');
@@ -312,7 +368,44 @@
         }
     }
 
-    // FUNGSI FORMAT UANG
+    // --- ALGORITMA PENCARIAN DIPERBARUI: NAMA & KATEGORI ---
+    function filterDropdownList(inputElement) {
+        const query = inputElement.value.toLowerCase();
+        const container = inputElement.closest('.dropdown-menu').querySelector('.dropdown-list-container');
+        if (!container) return;
+        const items = container.querySelectorAll('.dropdown-item');
+        let hasVisibleItem = false;
+
+        items.forEach(item => {
+            const nameElement = item.querySelector('.item-name');
+            const categoryElement = item.querySelector('.item-category');
+
+            if (nameElement) {
+                const name = nameElement.innerText.toLowerCase();
+                const category = categoryElement ? categoryElement.innerText.toLowerCase() : '';
+
+                // Membaca nama atau kategori
+                if (name.includes(query) || category.includes(query)) {
+                    item.classList.remove('hidden');
+                    item.classList.add('flex');
+                    hasVisibleItem = true;
+                } else {
+                    item.classList.remove('flex');
+                    item.classList.add('hidden');
+                }
+            }
+        });
+
+        const noFoundMsg = container.querySelector('.no-item-found');
+        if (noFoundMsg) {
+            if (!hasVisibleItem && query !== '') {
+                noFoundMsg.classList.remove('hidden');
+            } else {
+                noFoundMsg.classList.add('hidden');
+            }
+        }
+    }
+
     function formatVisual(input) {
         let value = input.value.replace(/[^0-9]/g, "");
         if (value !== "") {
@@ -329,44 +422,58 @@
         });
     };
 
-    // FUNGSI TAMBAH BARIS
     function addRow() {
         const container = document.getElementById('items_container');
         const template = document.querySelector('.item-row').cloneNode(true);
         
-        // Atur z-index standar
         template.style.zIndex = '10';
 
-        // Sesuaikan Input
-        template.querySelectorAll('input').forEach(input => {
+        template.querySelectorAll('input, select').forEach(input => {
             input.name = input.name.replace(/\[\d+\]/, `[${rowCount}]`);
+            
             if(input.type === 'hidden') {
                 if(input.classList.contains('mode-input')) input.value = 'existing';
                 if(input.classList.contains('sparepart-input')) input.value = '';
+                if(input.classList.contains('category-input')) input.value = 'Oli';
             } else {
-                input.value = input.classList.contains('qty-input') ? '1' : '';
+                if(input.classList.contains('search-input')) {
+                    input.value = ''; 
+                } else {
+                    input.value = input.classList.contains('qty-input') ? '1' : '';
+                }
             }
         });
+
+        template.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.remove('hidden');
+            item.classList.add('flex');
+        });
+        const noFoundMsg = template.querySelector('.no-item-found');
+        if(noFoundMsg) noFoundMsg.classList.add('hidden');
         
-        // Reset Visual Custom Dropdown (Mode)
         const modeTrigger = template.querySelector('.custom-dropdown[data-type="mode"] .dropdown-trigger');
         modeTrigger.className = "dropdown-trigger w-full pl-11 pr-10 py-3.5 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-100 transition-all group";
         template.querySelector('.custom-dropdown[data-type="mode"] .icon-left').className = "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-blue-500 icon-left";
         template.querySelector('.custom-dropdown[data-type="mode"] .selected-label').className = "text-sm font-black text-blue-700 selected-label";
         template.querySelector('.custom-dropdown[data-type="mode"] .selected-label').innerText = "Barang Lama";
 
-        // Reset Visual Custom Dropdown (Sparepart)
         const sparepartTrigger = template.querySelector('.custom-dropdown[data-type="sparepart"] .dropdown-trigger');
         sparepartTrigger.className = "dropdown-trigger w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-white transition-all group";
         const sparepartLabel = template.querySelector('.custom-dropdown[data-type="sparepart"] .selected-label');
         sparepartLabel.className = "text-sm font-bold text-gray-400 selected-label truncate";
         sparepartLabel.innerText = "-- Pilih Suku Cadang --";
 
-        // Tutup menu jika terbuka saat clone
+        const categoryTrigger = template.querySelector('.custom-dropdown[data-type="category"] .dropdown-trigger');
+        if (categoryTrigger) {
+            categoryTrigger.className = "dropdown-trigger w-full pl-11 pr-10 py-3 bg-white border border-blue-200 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all group";
+            const categoryLabel = template.querySelector('.custom-dropdown[data-type="category"] .selected-label');
+            categoryLabel.className = "text-sm font-black text-gray-700 selected-label truncate";
+            categoryLabel.innerText = "Oli"; 
+        }
+
         template.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         template.querySelectorAll('.arrow-icon').forEach(arrow => arrow.classList.remove('rotate-180', 'text-blue-500'));
 
-        // Reset form visibility
         template.querySelector('.existing-fields').classList.remove('hidden');
         template.querySelector('.new-fields').classList.add('hidden');
 

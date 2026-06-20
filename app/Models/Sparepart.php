@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Sparepart extends Model
 {
-    protected $fillable = ['name', 'price', 'stock', 'description'];
+    use HasFactory;
 
-    // Relasi: 1 Sparepart bisa tercatat di banyak Detail Servis
-    public function serviceDetails()
-    {
-        return $this->hasMany(ServiceDetail::class);
-    }
+    // Hanya tersisa 3 kolom ini
+    protected $fillable = ['name', 'brand', 'category', 'price', 'stock'];
 }
