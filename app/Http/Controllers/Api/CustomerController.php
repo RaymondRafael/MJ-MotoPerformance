@@ -20,23 +20,23 @@ class CustomerController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil pelanggan tidak ditemukan.'], 404);
         }
 
-        // 1. TANGKAP FILTER DARI MOBILE
+        // 1. untuk filter bulan & tahun
         $month = $request->query('month');
         $year = $request->query('year');
 
-        // 2. BUAT PONDASI QUERY (Untuk Customer Ini Saja)
+        // 2. Query untuk mengambil semua servis pelanggan, baik aktif maupun riwayat
         $baseQuery = Service::with(['vehicle', 'mechanic', 'details.sparepart'])
             ->whereHas('vehicle', function ($query) use ($customer) {
                 $query->where('customer_id', $customer->id);
             });
 
-        // 3. AMBIL DATA AKTI
+        // 3. Ambil data servis aktif (pending & processing)
         $activeServices = (clone $baseQuery)
             ->whereIn('status', ['pending', 'processing'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 4. AMBIL DATA RIWAYAT
+        // 4. Ambil data riwayat servis (finished, lunas, completed, paid)
         $historyQuery = (clone $baseQuery)->whereIn('status', ['finished', 'lunas', 'completed', 'paid']);
         
         // Jika ada filter bulan & tahun, terapkan ke Riwayat
@@ -52,7 +52,7 @@ class CustomerController extends Controller
             'data' => [
                 'customer_name' => $customer->name,
                 
-                // MAPPING DATA AKTIF
+                // untuk menampilkan data servis aktif di aplikasi mobile
                 'active' => $activeServices->map(function($service) {
                     return [
                         'id' => $service->id,
@@ -66,7 +66,7 @@ class CustomerController extends Controller
                     ];
                 }),
                 
-                // MAPPING DATA RIWAYAT
+                // untuk menampilkan data riwayat servis di aplikasi mobile
                 'history' => $historyServices->map(function($service) {
                     return [
                         'id' => $service->id,
@@ -86,7 +86,7 @@ class CustomerController extends Controller
                         
                         'rincian_suku_cadang' => $service->details->map(function($detail) {
                             return [
-                                // [PERBAIKAN 3]: Pisahkan barang aktif dan barang historis
+                                // Pisahkan barang aktif dan barang historis
                                 'nama' => $detail->sparepart?->name, 
                                 'historical_name' => $detail->historical_name, 
                                 

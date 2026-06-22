@@ -168,7 +168,7 @@ class CustomerController extends Controller
                 'max:15',
                 'unique:customers,phone_number,' . $customer->id
             ],
-            'address' => 'nullable|string' 
+            'address' => 'required|string|max:255' 
         ], [
             // Kamus Error untuk Update
             'name.required' => 'Nama lengkap wajib diisi.',
@@ -177,6 +177,8 @@ class CustomerController extends Controller
             'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
             'phone_number.max' => 'Nomor terlalu panjang. Maksimal 15 angka.',
             'phone_number.unique' => 'Nomor WhatsApp ini sudah terdaftar.',
+            'address.required' => 'Alamat lengkap wajib diisi.',
+            'address.max' => 'Alamat terlalu panjang. Maksimal 255 karakter.',
         ]);
 
         // 2. Update data profil pelanggan (Tabel customers)

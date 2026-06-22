@@ -120,10 +120,14 @@
                             {{ $sparepart->stock }} Pcs
                         </span>
                     </td>
-                    <td class="p-5 text-center">
+                    <td class="p-5 text-center flex items-center justify-center gap-2">
+                        <a href="{{ route('admin.spareparts.edit', $sparepart->id) }}" class="text-gray-400 hover:text-blue-600 p-2.5 hover:bg-blue-50 rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200" title="Edit Detail Barang">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        
                         <form action="{{ route('admin.spareparts.destroy', $sparepart->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus suku cadang ini? (Pastikan barang ini belum pernah masuk ke nota pembelian/servis)')">
                             @csrf @method('DELETE')
-                            <button type="submit" class="text-gray-400 hover:text-red-600 p-2.5 hover:bg-red-50 rounded-xl transition-all" title="Hapus Barang">
+                            <button type="submit" class="text-gray-400 hover:text-red-600 p-2.5 hover:bg-red-50 rounded-xl transition-all shadow-sm border border-transparent hover:border-red-200" title="Hapus Barang">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </form>

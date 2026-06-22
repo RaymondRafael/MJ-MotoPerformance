@@ -4,27 +4,96 @@
 @section('header', 'Manajemen Servis')
 
 @section('content')
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100">
     
-    <div class="p-6 border-b flex flex-col md:flex-row justify-between items-center bg-gray-50 gap-4">
-        <h2 class="font-bold text-gray-700">Antrean Kendaraan Hari Ini</h2>
+    <div class="p-6 border-b flex flex-col xl:flex-row justify-between items-center bg-gray-50 gap-4 rounded-t-2xl relative z-30">
+        <h2 class="font-bold text-gray-700 w-full xl:w-auto text-center xl:text-left">Antrean Kendaraan Hari Ini</h2>
         
-        <div class="flex items-center gap-3 w-full md:w-auto">
-            <form action="{{ route('admin.services.index') }}" method="GET" class="flex w-full md:w-auto">
-                <div>
+        <div class="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto">
+            <form action="{{ route('admin.services.index') }}" method="GET" id="filterForm" class="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-center">
+                
+                <input type="hidden" name="month" id="filterMonth" value="{{ request('month') }}">
+                <input type="hidden" name="year" id="filterYear" value="{{ request('year') }}">
+
+                <div class="relative w-full sm:w-auto" id="dropdown-container-month">
+                    <div id="dropdown-trigger-month" onclick="toggleFilterDropdown('month')" class="flex items-center w-full sm:w-auto bg-white rounded-xl px-4 py-2 border border-gray-200 hover:border-gray-300 transition-all cursor-pointer select-none min-w-[160px] h-[52px]">
+                        <i class="fas fa-calendar-alt text-gray-500 mr-3 text-lg"></i>
+                        <div class="flex flex-col flex-grow pr-4 text-left">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider -mb-1">Pilih Bulan</span>
+                            <span id="dropdown-label-month" class="text-sm font-bold text-gray-800 truncate max-w-[100px]">
+                                {{ request('month') && isset($months[request('month')]) ? $months[request('month')] : 'Semua Bulan' }}
+                            </span>
+                        </div>
+                        <i id="dropdown-icon-month" class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+                    </div>
+
+                    <div id="dropdown-menu-month" class="hidden absolute top-full left-0 mt-2 w-full min-w-[180px] bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden py-2 z-50">
+                        <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                            <div class="dropdown-item-month px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ !request('month') ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('month', '', 'Semua Bulan', this)">
+                                <span>Semua Bulan</span>
+                                <i class="fas fa-check text-xs {{ !request('month') ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            @foreach($months as $angka => $nama)
+                                <div class="dropdown-item-month px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('month') == $angka ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('month', '{{ $angka }}', '{{ $nama }}', this)">
+                                    <span>{{ $nama }}</span>
+                                    <i class="fas fa-check text-xs {{ request('month') == $angka ? '' : 'hidden' }} text-red-500"></i>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative w-full sm:w-auto" id="dropdown-container-year">
+                    <div id="dropdown-trigger-year" onclick="toggleFilterDropdown('year')" class="flex items-center w-full sm:w-auto bg-white rounded-xl px-4 py-2 border border-gray-200 hover:border-gray-300 transition-all cursor-pointer select-none min-w-[140px] h-[52px]">
+                        <i class="fas fa-calendar-check text-gray-500 mr-3 text-lg"></i>
+                        <div class="flex flex-col flex-grow pr-4 text-left">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider -mb-1">Pilih Tahun</span>
+                            <span id="dropdown-label-year" class="text-sm font-bold text-gray-800 truncate max-w-[80px]">
+                                {{ request('year') ?: 'Semua Tahun' }}
+                            </span>
+                        </div>
+                        <i id="dropdown-icon-year" class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+                    </div>
+
+                    <div id="dropdown-menu-year" class="hidden absolute top-full left-0 mt-2 w-full min-w-[140px] bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden py-2 z-50">
+                        <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                            <div class="dropdown-item-year px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ !request('year') ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('year', '', 'Semua Tahun', this)">
+                                <span>Semua Tahun</span>
+                                <i class="fas fa-check text-xs {{ !request('year') ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            @foreach($years as $yr)
+                                <div class="dropdown-item-year px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('year') == $yr ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('year', '{{ $yr }}', '{{ $yr }}', this)">
+                                    <span>{{ $yr }}</span>
+                                    <i class="fas fa-check text-xs {{ request('year') == $yr ? '' : 'hidden' }} text-red-500"></i>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Plat/Nama/Keluhan..." 
                         class="px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-red-500 focus:border-red-500 text-sm w-full md:w-64">
                     <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-r-lg border border-l-0 border-gray-300 transition">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
+
+                @if(request()->filled('month') || request()->filled('year') || request()->filled('search'))
+                    <a href="{{ route('admin.services.index') }}" 
+                    class="bg-white hover:bg-gray-100 text-gray-600 hover:text-red-500 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition whitespace-nowrap shadow-sm h-[38px] flex items-center justify-center" 
+                    title="Bersihkan Semua Filter">
+                        <i class="fas fa-undo mr-1"></i> Reset
+                    </a>
+                @endif
             </form>
 
-            <a href="{{ route('admin.services.create') }}" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">
+            <a href="{{ route('admin.services.create') }}" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap h-[38px] flex items-center justify-center">
                 <i class="fas fa-plus mr-1"></i> Servis Baru
             </a>
         </div>
     </div>
+
 
     @if(session('success'))
     <div class="m-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm rounded">
@@ -121,24 +190,6 @@
                         @endif
                     </td>
                     <td class="p-4 text-center space-x-2 flex justify-center items-center">
-                        
-                        @if($service->status == 'processing')
-                            <form action="{{ route('admin.services.updateStatus', $service->id) }}" method="POST" class="inline" onsubmit="return confirm('Tandai servis selesai dan kirim WA tagihan ke pelanggan?')">
-                                @csrf @method('PUT')
-                                <input type="hidden" name="status" value="finished">
-                                <button type="submit" class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm">
-                                    <i class="fas fa-wrench mr-1"></i> Selesaikan
-                                </button>
-                            </form>
-                        @elseif($service->status == 'finished')
-                            <form action="{{ route('admin.services.updateStatus', $service->id) }}" method="POST" class="inline" onsubmit="return confirm('Tandai pembayaran telah lunas dan kirim WA ucapan terima kasih?')">
-                                @csrf @method('PUT')
-                                <input type="hidden" name="status" value="lunas">
-                                <button type="submit" class="text-white bg-green-500 hover:bg-green-600 px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm">
-                                    <i class="fas fa-hand-holding-usd mr-1"></i> Lunasi
-                                </button>
-                            </form>
-                        @endif
 
                         <a href="{{ route('admin.services.show', $service->id) }}" class="text-blue-500 hover:text-blue-700 p-2 bg-blue-50 rounded-lg ml-1" title="Lihat Detail/Nota"><i class="fas fa-eye"></i></a>
                         
@@ -168,9 +219,72 @@
     </div>
 
     @if($services->hasPages())
-        <div class="p-4 border-t border-gray-100 bg-gray-50">
+        <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
             {{ $services->withQueryString()->links() }}
         </div>
     @endif
 </div>
+
+<script>
+    function toggleFilterDropdown(tipe) {
+        const menu = document.getElementById(`dropdown-menu-${tipe}`);
+        const trigger = document.getElementById(`dropdown-trigger-${tipe}`);
+        const icon = document.getElementById(`dropdown-icon-${tipe}`);
+
+        if(tipe === 'month') closeFilterDropdown('year');
+        if(tipe === 'year') closeFilterDropdown('month');
+
+        if (menu.classList.contains('hidden')) {
+            menu.classList.remove('hidden');
+            icon.classList.add('rotate-180', 'text-red-500');
+            trigger.classList.add('border-red-300', 'ring-2', 'ring-red-100', 'bg-white');
+        } else {
+            closeFilterDropdown(tipe);
+        }
+    }
+
+    function closeFilterDropdown(tipe) {
+        const menu = document.getElementById(`dropdown-menu-${tipe}`);
+        const trigger = document.getElementById(`dropdown-trigger-${tipe}`);
+        const icon = document.getElementById(`dropdown-icon-${tipe}`);
+
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+            icon.classList.remove('rotate-180', 'text-red-500');
+            trigger.classList.remove('border-red-300', 'ring-2', 'ring-red-100', 'bg-white');
+        }
+    }
+
+    function selectFilterOption(tipe, value, label, element) {
+        // 1. Masukkan nilai ke input hidden
+        document.getElementById(`filter${tipe.charAt(0).toUpperCase() + tipe.slice(1)}`).value = value;
+        
+        // 2. Ubah teks label utama
+        document.getElementById(`dropdown-label-${tipe}`).innerText = label;
+
+        // 3. Reset highlight warna pilihan lain
+        const allItems = document.querySelectorAll(`.dropdown-item-${tipe}`);
+        allItems.forEach(item => {
+            item.classList.remove('bg-red-50', 'text-red-600');
+            item.classList.add('text-gray-600', 'hover:bg-gray-50', 'hover:text-gray-900');
+            item.querySelector('.fa-check').classList.add('hidden');
+        });
+
+        // 4. Aktifkan tanda centang pada item baru
+        element.classList.add('bg-red-50', 'text-red-600');
+        element.classList.remove('text-gray-600', 'hover:bg-gray-50', 'hover:text-gray-900');
+        element.querySelector('.fa-check').classList.remove('hidden');
+
+        closeFilterDropdown(tipe);
+
+        // 5. FITUR INSTAN: Langsung submit form begitu data diklik!
+        document.getElementById('filterForm').submit();
+    }
+
+    // Klik di luar area dropdown untuk menutup
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('#dropdown-container-month')) closeFilterDropdown('month');
+        if (!event.target.closest('#dropdown-container-year')) closeFilterDropdown('year');
+    });
+</script>
 @endsection

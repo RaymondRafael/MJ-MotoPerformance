@@ -29,9 +29,9 @@ class PurchaseController extends Controller
             $query->whereYear('purchase_date', $request->year);
         }
 
-        $purchases = $query->orderBy('purchase_date', 'desc')->paginate(10);
+        $purchases = $query->orderBy('purchase_date', 'desc')->orderBy('id', 'desc')->paginate(10);
 
-        // Siapkan array data bulan untuk dropdown
+        // Array untuk menampilkan nama bulan
         $months = [
             '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
             '04' => 'April', '05' => 'Mei', '06' => 'Juni',
@@ -39,14 +39,12 @@ class PurchaseController extends Controller
             '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
         ];
 
-        // Ambil data tahun yang tersedia di database tabel purchases secara dinamis
         $years = Purchase::selectRaw('YEAR(purchase_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
             
-        // Jika database kosong, berikan tahun sekarang sebagai default
         if (empty($years)) {
             $years = [date('Y')];
         }
@@ -58,7 +56,7 @@ class PurchaseController extends Controller
     {
         $spareparts = Sparepart::all(); 
         
-        // MENYAMAKAN ARRAY KATEGORI SEPERTI DI SPAREPART CONTROLLER
+        // Array untuk kategori suku cadang yang akan digunakan di form tambah pembelian
         $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip', 'Lainnya'];
         
         return view('admin.purchases.create', compact('spareparts', 'categories'));
@@ -98,21 +96,21 @@ class PurchaseController extends Controller
                 }
 
                 if ($item['mode'] === 'new') {
-                    // PERBAIKAN VALIDASI: Cek juga apakah kategori dipilih
+                    // Cek juga apakah kategori dipilih
                     if (empty($item['new_name']) || empty($item['selling_price']) || empty($item['new_category'])) {
                         throw new \Exception("Nama Barang, Kategori, dan Harga Jual pada baris ke-" . ($index + 1) . " wajib diisi.");
                     }
 
 
 
-                    // --- BENTENG ANTI-DUPLIKAT (FUZZY TOKEN INTERSECTION LOGIC) ---
+                    // Untuk mencegah duplikasi barang baru yang sangat mirip dengan barang lama.
                     $namaBarangBaru = trim($item['new_name']); 
                     $cekDuplikat = null;
                     
-                    // Tahap 1: Pengecekan sama persis
+                    // Pengecekan sama persis
                     $cekDuplikat = Sparepart::where('name', $namaBarangBaru)->first();
 
-                    // Tahap 2: Pengecekan Kata per Kata dengan toleransi Typo (Fuzzy)
+                    // Pengecekan Kata per Kata
                     if (!$cekDuplikat) {
                         
                         // Fungsi memecah nama jadi kata-kata (tanpa simbol)
@@ -124,19 +122,21 @@ class PurchaseController extends Controller
 
                         $newWords = $normalizeToWords($namaBarangBaru);
                         
+                        // Jika nama baru tidak memiliki kata sama sekali, lewati pengecekan kata per kata
                         if (count($newWords) > 0) {
                             $allSpareparts = Sparepart::select('id', 'name')->get();
                             
+                            // Bandingkan kata per kata dengan semua sparepart yang ada
                             foreach($allSpareparts as $sp) {
                                 $existingWords = $normalizeToWords($sp->name);
                                 
                                 // Lewati jika data lama tidak ada huruf/angkanya
                                 if (count($existingWords) === 0) continue;
                                 
-                                // Tentukan array mana yang jumlah katanya lebih sedikit
+                                // Tentukan array mana yang jumlah katanya lebih sedikit / lebih banyak
                                 $shorter = count($newWords) < count($existingWords) ? $newWords : $existingWords;
                                 $longer = count($newWords) < count($existingWords) ? $existingWords : $newWords;
-
+                                
                                 $matchedWords = 0;
 
                                 // Cek setiap kata di array yang lebih pendek
@@ -157,7 +157,7 @@ class PurchaseController extends Controller
                                     }
                                 }
                                 
-                                // Jika SELURUH kata di array yang lebih pendek berhasil "ditemukan" kemiripannya
+                                // Jika seluruh kata di array yang lebih pendek berhasil "ditemukan" kemiripannya
                                 if ($matchedWords === count($shorter)) {
                                     $cekDuplikat = $sp;
                                     break;
@@ -175,6 +175,10 @@ class PurchaseController extends Controller
 
                     if ($sellingPrice <= 0) {
                         throw new \Exception("Harga Jual pada baris ke-" . ($index + 1) . " tidak boleh 0.");
+                    }
+
+                    if ($sellingPrice < $price) {
+                        throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Harga Jual (Rp " . number_format($sellingPrice, 0, ',', '.') . ") tidak boleh lebih kecil dari Harga Modal/Beli (Rp " . number_format($price, 0, ',', '.') . ").");
                     }
 
 
@@ -197,6 +201,14 @@ class PurchaseController extends Controller
 
                     $sparepartId = $item['sparepart_id'];
                     $sparepart = Sparepart::findOrFail($sparepartId);
+
+                    // Harga beli tidak boleh melebihi harga jual saat ini
+                    if ($price > $sparepart->price) {
+                        throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Harga Beli/Modal (Rp " . number_format($price, 0, ',', '.') . ") tidak boleh melebihi Harga Jual saat ini (Rp " . number_format($sparepart->price, 0, ',', '.') . ").");
+                    }
+
+                    $sparepart->increment('stock', $qty);
+                    $snapshotName = $sparepart->name;
 
                     $sparepart->increment('stock', $qty);
                     $snapshotName = $sparepart->name; 
@@ -227,12 +239,14 @@ class PurchaseController extends Controller
         }
     }
 
+    // Menampilkan detail pembelian
     public function show($id)
     {
         $purchase = Purchase::with('details.sparepart')->findOrFail($id);
         return view('admin.purchases.show', compact('purchase'));
     }
 
+    // Menghapus Item dari Nota Pembelian
     public function destroyItem($detail_id) {
         $purchaseDetail = PurchaseDetail::find($detail_id);
         

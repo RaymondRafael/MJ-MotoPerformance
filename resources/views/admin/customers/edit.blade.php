@@ -3,31 +3,52 @@
 @section('header', 'Manajemen Pelanggan')
 
 @section('content')
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-3xl mx-auto">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-3xl mx-auto mt-4">
     <div class="mb-6 border-b pb-4">
         <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-user-edit text-blue-500 mr-2"></i>Edit Data Pelanggan</h2>
         <p class="text-sm text-gray-500 mt-1">Perbarui informasi kontak dan domisili pelanggan di sini.</p>
     </div>
 
+    @if($errors->any())
+    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-fade-in-down">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-bold text-red-800">Gagal Memperbarui Data:</h3>
+                <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <form action="{{ route('admin.customers.update', $customer->id) }}" method="POST" class="space-y-6">
         @csrf
-        @method('PUT') <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        @method('PUT') 
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap <span class="text-red-500">*</span></label>
-                <input type="text" name="name" value="{{ $customer->name }}" required placeholder="Nama Pelanggan"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition">
+                <input type="text" name="name" value="{{ old('name', $customer->name) }}" required placeholder="Nama Pelanggan"
+                    class="w-full px-4 py-3 border @error('name') border-red-500 bg-red-50/30 @else border-gray-300 @enderror rounded-xl focus:ring-blue-500 focus:border-blue-500 transition font-medium text-gray-800">
             </div>
+            
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-2">No. WhatsApp <span class="text-red-500">*</span></label>
-                <input type="text" name="phone_number" value="{{ $customer->phone_number }}" required placeholder="Contoh: 0812..."
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition">
+                <input type="text" name="phone_number" value="{{ old('phone_number', $customer->phone_number) }}" required placeholder="Contoh: 0812..."
+                    class="w-full px-4 py-3 border @error('phone_number') border-red-500 bg-red-50/30 @else border-gray-300 @enderror rounded-xl focus:ring-blue-500 focus:border-blue-500 transition font-bold text-gray-800">
             </div>
         </div>
 
         <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Lengkap</label>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Alamat Lengkap<span class="text-red-500">*</span></label>
             <textarea name="address" rows="3" placeholder="Masukkan alamat domisili..."
-                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition">{{ $customer->address }}</textarea>
+                class="w-full px-4 py-3 border @error('address') border-red-500 bg-red-50/30 @else border-gray-300 @enderror rounded-xl focus:ring-blue-500 focus:border-blue-500 transition font-medium text-gray-800">{{ old('address', $customer->address) }}</textarea>
         </div>
 
         <div class="flex justify-end gap-4 pt-4 border-t mt-8">

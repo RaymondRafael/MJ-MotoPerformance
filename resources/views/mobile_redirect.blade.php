@@ -14,7 +14,7 @@
             <i class="fas fa-mobile-alt"></i>
         </div>
         
-        <h2 class="text-xl font-black text-slate-800 mb-2">Membuka Aplikasi</h2>
+        <!-- <h2 class="text-xl font-black text-slate-800 mb-2">Membuka Aplikasi</h2>
         <p class="text-sm text-slate-500 mb-6">Sistem sedang mencoba mengarahkan Anda kembali ke aplikasi mobile MJ-MotoPerformance.</p>
 
         <a href="exp://10.183.114.100:8081/--/reset-password?token={{ $token }}&email={{ urlencode($email) }}" 
@@ -26,10 +26,10 @@
             <span class="h-px bg-slate-300 flex-1"></span>
             <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Atau</span>
             <span class="h-px bg-slate-300 flex-1"></span>
-        </div>
+        </div> -->
 
         <a href="/reset-password/{{ $token }}?email={{ urlencode($email) }}" 
-           class="block w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+        class="block w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
             <i class="fas fa-globe mr-2"></i> Lanjutkan di Web Browser
         </a>
     </div>

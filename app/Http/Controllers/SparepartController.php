@@ -14,60 +14,69 @@ class SparepartController extends Controller
         $selectedCategory = $request->category; 
 
         $spareparts = Sparepart::when($search, function ($query, $search) {
-                // Membungkus pencarian nama ATAU merek dengan group where
-                return $query->where(function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('brand', 'like', "%{$search}%"); 
-                });
+                return $query->where('name', 'like', "%{$search}%")
+                            ->orWhere('brand', 'like', "%{$search}%");
             })
             ->when($selectedCategory, function ($query, $selectedCategory) {
                 return $query->where('category', $selectedCategory); 
             })
-            ->latest()
+            ->latest('stock', 'asc')
             ->paginate(10);
 
-        $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip', 'Lainnya'];
+        $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Lainnya'];
 
         return view('admin.spareparts.index', compact('spareparts', 'categories'));
     }
 
-    public function create()
-    {
-        $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip' ,'Lainnya'];
-        return view('admin.spareparts.create', compact('categories'));
-    }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-            'brand' => 'nullable',
-            'category' => 'required', 
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|numeric|min:0'
-        ]);
+    // public function create()
+    // {
+    //     $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip' ,'Lainnya'];
+    //     return view('admin.spareparts.create', compact('categories'));
+    // }
+
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'name' => 'required',
+    //         'brand' => 'nullable',
+    //         'category' => 'required', 
+    //         'price' => 'required|numeric|min:0',
+    //         'stock' => 'required|numeric|min:0'
+    //     ]);
         
-        Sparepart::create($request->all());
-        return redirect()->route('admin.spareparts.index')->with('success', 'Data suku cadang berhasil ditambahkan.');
-    }
+    //     Sparepart::create($request->all());
+    //     return redirect()->route('admin.spareparts.index')->with('success', 'Data suku cadang berhasil ditambahkan.');
+    // }
 
     public function edit(Sparepart $sparepart)
     {
-        $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip', 'Lainnya'];
-        return view('admin.spareparts.edit', compact('sparepart', 'categories'));
+        return view('admin.spareparts.edit', compact('sparepart'));
     }
 
     public function update(Request $request, Sparepart $sparepart)
     {
+        // 1. Bersihkan format titik pada inputan harga
+        $request->merge([
+            'price' => str_replace('.', '', $request->price)
+        ]);
+
+        // 2. Validasi hanya untuk 3 kolom yang diizinkan
         $request->validate([
-            'name' => 'required',
-            'brand' => 'nullable',
-            'category' => 'required',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|numeric|min:0'
+            'name' => 'required|string|max:255',
+            'brand' => 'nullable|string|max:255',
+            'price' => 'required|numeric|min:1',
+        ], [
+            // Kamus Error
+            'name.required' => 'Nama barang wajib diisi.',
+            'brand.required' => 'Merek barang wajib diisi.',
+            'price.required' => 'Harga jual barang wajib diisi.',
+            'price.min' => 'Harga jual barang tidak boleh Rp 0.' 
         ]);
         
-        $sparepart->update($request->all());
+        // 3. Simpan perubahan secara spesifik dan aman
+        $sparepart->update($request->only(['name', 'brand', 'price']));
+        
         return redirect()->route('admin.spareparts.index')->with('success', 'Data suku cadang berhasil diperbarui.');
     }
 

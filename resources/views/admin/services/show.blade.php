@@ -303,6 +303,31 @@
                     </span>
                     <span class="text-4xl font-black text-red-600 tracking-tight">Rp {{ number_format($service->total_cost, 0, ',', '.') }}</span>
                 </div>
+
+                <div class="mt-4 flex justify-end">
+                    
+                    @if($service->status == 'processing')
+                        <form action="{{ route('admin.services.updateStatus', $service->id) }}" method="POST" class="w-full sm:w-auto" onsubmit="return confirm('Tandai servis selesai dan kirim WA tagihan ke pelanggan?')">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="status" value="finished">
+                            <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5">
+                                <i class=""></i> Selesaikan Servis
+                            </button>
+                        </form>
+
+                    @elseif($service->status == 'finished')
+                        <form action="{{ route('admin.services.updateStatus', $service->id) }}" method="POST" class="w-full sm:w-auto" onsubmit="return confirm('Tandai pembayaran telah lunas dan kirim WA ucapan terima kasih?')">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="status" value="lunas">
+                            <button type="submit" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5">
+                                <i class="fas fa-hand-holding-usd"></i> Lunasi Pembayaran
+                            </button>
+                        </form>
+                    @endif
+
+                </div>
             </div>
         </div>
     </div>

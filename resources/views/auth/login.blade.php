@@ -68,7 +68,7 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i class="fas fa-envelope text-gray-500"></i>
                     </div>
-                    <input type="email" name="email" id="email" required value="{{ old('email') }}" placeholder="Masukkan email anda"
+                    <input type="email" name="email" id="email" required value="{{ old('email') }}" placeholder="Masukkan email anda..."
                         class="w-full pl-11 pr-4 py-3.5 bg-gray-900/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none">
                 </div>
             </div>

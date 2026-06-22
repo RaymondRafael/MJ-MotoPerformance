@@ -12,31 +12,63 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    // Menampilkan Daftar Servis dengan Fitur Pencarian (Mendukung Snapshot Data)
+    // Menampilkan Daftar Servis dengan Fitur Pencarian 
     public function index(Request $request)
     {
         $search = $request->search;
+        $month = $request->month;
+        $year = $request->year;   
 
         $services = Service::with(['vehicle.customer', 'mechanic'])
             ->when($search, function ($query, $search) {
-                return $query->whereHas('vehicle', function ($q) use ($search) {
-                    $q->where('license_plate', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($qc) use ($search) {
-                        $qc->where('name', 'like', "%{$search}%");
-                    });
-                })
-                // PENGAMANAN & FITUR BARU: Cari juga di kolom snapshot jika master data sudah dihapus
-                ->orWhere('historical_license_plate', 'like', "%{$search}%")
-                ->orWhere('historical_customer_name', 'like', "%{$search}%")
-                ->orWhere('complaint', 'like', "%{$search}%");
+                // Dibungkus dengan where() agar orWhere 
+                // tidak membocorkan/merusak filter bulan dan tahun di bawahnya
+                return $query->where(function ($q) use ($search) {
+                    $q->whereHas('vehicle', function ($qv) use ($search) {
+                        $qv->where('license_plate', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($qc) use ($search) {
+                            $qc->where('name', 'like', "%{$search}%");
+                        });
+                    })
+                    // Pencarian di kolom snapshot
+                    ->orWhere('historical_license_plate', 'like', "%{$search}%")
+                    ->orWhere('historical_customer_name', 'like', "%{$search}%")
+                    ->orWhere('complaint', 'like', "%{$search}%");
+                });
+            })
+            // 1. TAMBAHAN FILTER BULAN 
+            ->when($month, function ($query, $month) {
+                return $query->whereMonth('created_at', $month);
+            })
+            // 2. TAMBAHAN FILTER TAHUN
+            ->when($year, function ($query, $year) {
+                return $query->whereYear('created_at', $year);
             })
             ->orderBy('id', 'asc') 
             ->paginate(10);
 
-        
-        
-        return view('admin.services.index', compact('services'));
+        // 3. Siapkan array bulan untuk dropdown di tampilan (View)
+        $months = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+            '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+            '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+            '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        ];
+
+        // 4. Ambil data tahun dari riwayat servis di database
+        $years = Service::selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+            
+        if (empty($years)) {
+            $years = [date('Y')];
+        }
+
+        return view('admin.services.index', compact('services', 'months', 'years'));
     }
+
 
     // Menampilkan Form Tambah Servis Baru
     public function create()
@@ -72,7 +104,7 @@ class ServiceController extends Controller
             'vehicle_id' => $request->vehicle_id,
             'mechanic_id' => $request->mechanic_id,
             
-            // PROSES SNAPSHOT: Mengunci riwayat data saat ini agar abadi
+            // PROSES SNAPSHOT: Mengunci riwayat data saat ini 
             'historical_customer_name'  => $vehicle->customer->name,
             'historical_customer_phone' => $vehicle->customer->phone_number,
             'historical_license_plate'  => $vehicle->license_plate,
@@ -114,7 +146,7 @@ class ServiceController extends Controller
         $service->status = $request->status;
         $service->save();
 
-        // PENGAMANAN SNAPSHOT: Ambil data dari kolom historis, jika kosong baru ambil dari relasi aktif
+        // Ambil data dari kolom historis, jika kosong baru ambil dari relasi aktif
         $customerName  = $service->historical_customer_name ?? ($service->vehicle->customer->name ?? 'Pelanggan');
         $customerPhone = $service->historical_customer_phone ?? ($service->vehicle->customer->phone_number ?? '');
         $platNomor     = $service->historical_license_plate ?? ($service->vehicle->license_plate ?? '-');
@@ -135,7 +167,7 @@ class ServiceController extends Controller
         elseif ($request->status == 'lunas') {
             $pesan = "Halo *{$customerName}*,\n\n";
             $pesan .= "Terima kasih atas pembayaran servis kendaraan *{$platNomor}* Anda di MJ MotoPerformance. Tagihan Anda telah dinyatakan *LUNAS*.\n\n";
-            $pesan .= "Semoga kendaraan Anda selalu dalam kondisi prima. Hati-hati di jalan dan sampai jumpa di servis berikutnya! 🏍️💨";
+            $pesan .= "Semoga kendaraan Anda selalu dalam kondisi prima. Hati-hati di jalan dan sampai jumpa di servis berikutnya!";
 
             return $this->kirimWhatsApp($customerPhone, $pesan, 'Pembayaran Lunas! Ucapan terima kasih berhasil dikirim.');
         }
@@ -164,9 +196,6 @@ class ServiceController extends Controller
         }
     }
 
-    // =========================================================================
-    // BLOK PENGAMAN EDIT TRANSAKSI
-    // =========================================================================
 
     public function edit($id)
     {
@@ -188,6 +217,7 @@ class ServiceController extends Controller
         return view('admin.services.edit', compact('service', 'vehicles', 'mechanics'));
     }
 
+    // Memperbarui Data Servis dengan Validasi
     public function update(Request $request, $id)
     {
         $service = Service::findOrFail($id);
@@ -206,7 +236,6 @@ class ServiceController extends Controller
             'mechanic_id.exists' => 'Gagal: Mekanik tidak valid atau sudah dihapus.',
         ]);
 
-        // PERBARUI JEJAK NAMA MEKANIK (Jika Ada Perubahan Mekanik)
         $mechanicName = $service->historical_mechanic_name;
         if ($request->mechanic_id) {
             $mechanic = Mechanic::find($request->mechanic_id);
@@ -237,9 +266,6 @@ class ServiceController extends Controller
         return redirect()->route('admin.services.index')->with('success', 'Riwayat antrean servis yang belum diproses berhasil dibatalkan dan dihapus.');
     }
 
-    // =========================================================================
-    // BLOK PENGAMAN PENAMBAHAN/PENGURANGAN BIAYA DI NOTA
-    // =========================================================================
 
     public function addSparepart(Request $request, $id)
     {
@@ -274,9 +300,22 @@ class ServiceController extends Controller
         $sparepart->decrement('stock', $request->quantity);
         $service->increment('total_cost', $subtotal);
 
-        if ($service->status === 'pending') {
-            $service->update(['status' => 'processing']);
-        }
+        // if ($service->status === 'pending') {
+        //     $service->update(['status' => 'processing']);
+
+        //     // Data snapshot pelanggan
+        //     $customerName  = $service->historical_customer_name ?? ($service->vehicle->customer->name ?? 'Pelanggan');
+        //     $customerPhone = $service->historical_customer_phone ?? ($service->vehicle->customer->phone_number ?? '');
+        //     $platNomor     = $service->historical_license_plate ?? ($service->vehicle->license_plate ?? '-');
+        //     $motor         = $service->historical_vehicle_motor ?? ($service->vehicle ? $service->vehicle->brand . ' ' . $service->vehicle->model : 'Kendaraan');
+
+        //     $pesan = "Halo *{$customerName}*,\n\n";
+        //     $pesan .= "Kendaraan bermotor *{$platNomor}* ({$motor}) Anda saat ini sedang *MULAI DIKERJAKAN* oleh mekanik.\n\n";
+        //     $pesan .= "Kami akan menginformasikan kembali jika pengerjaan telah selesai.\n\n";
+        //     $pesan .= "Terima kasih atas kesabaran Anda!";
+
+        //     $this->kirimWhatsApp($customerPhone, $pesan, 'Sukses');
+        // }
 
         return redirect()->back()->with('success', 'Suku cadang ditambahkan ke nota.');
     }

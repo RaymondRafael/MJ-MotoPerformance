@@ -198,9 +198,9 @@ class AuthController extends Controller
     }
 
     
-    // FUNGSI UNTUK MENGIRIM WA
+    // Kirim pesan selamat datang via WhatsApp
     private function kirimWelcomeWA($phone, $name, $platform)
-    {
+    {   
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         if (substr($cleanPhone, 0, 1) == '0') {
             $cleanPhone = '62' . substr($cleanPhone, 1);
