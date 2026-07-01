@@ -8,15 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('spareparts', function (Blueprint $table) {
-            $table->string('brand')->nullable()->after('name');
+        Schema::table('customers', function (Blueprint $table) {
+            $table->rememberToken(); 
         });
     }
 
     public function down(): void
     {
-        Schema::table('spareparts', function (Blueprint $table) {
-            $table->dropColumn('brand');
+        Schema::table('customers', function (Blueprint $table) {
         });
     }
 };

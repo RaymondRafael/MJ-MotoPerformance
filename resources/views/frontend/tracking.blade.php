@@ -47,8 +47,9 @@
             </a>
 
             <div class="flex items-center gap-4">
-                <span class="text-slate-500 text-sm hidden md:inline">Halo, <strong class="text-slate-900">{{ Auth::user()->name }}</strong></span>
-                <a href="/logout" class="flex items-center gap-2 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md">
+                <span class="text-slate-500 text-sm hidden md:inline">Halo, <strong class="text-slate-900">{{ $customer->name }}</strong></span>
+                
+                <a href="/logout" onclick="return confirm('Apakah Anda yakin ingin keluar dari akun Anda?')" class="flex items-center gap-2 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm hover:shadow-md">
                     <i class="fas fa-sign-out-alt"></i> Keluar
                 </a>
             </div>
@@ -67,12 +68,14 @@
                 <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center mr-3 shadow-inner">
                     <i class="fas fa-satellite-dish animate-pulse"></i>
                 </div>
-                Sedang Dikerjakan
+                Pelacakan Servis
             </h2>
             
             @php
-                $activeServices = $services->whereIn('status', ['pending', 'processing']);
-                $historyServices = $services->whereIn('status', ['finished', 'lunas', 'completed', 'paid'])->sortByDesc('updated_at');
+                // Memasukkan status 'finished' ke kolom aktif
+                $activeServices = $services->whereIn('status', ['pending', 'processing', 'finished']);
+                // Riwayat hanya berisi yang sudah dibayar/lunas
+                $historyServices = $services->whereIn('status', ['lunas', 'completed', 'paid'])->sortByDesc('updated_at');
             @endphp
 
             @if($activeServices->isEmpty())
@@ -81,13 +84,13 @@
                         <i class="fas fa-motorcycle"></i>
                     </div>
                     <h3 class="font-bold text-slate-700 text-lg">Tidak ada kendaraan di bengkel saat ini</h3>
-                    <p class="text-slate-500 text-sm mt-2">Kendaraan yang sedang antre atau diservis akan otomatis muncul di sini.</p>
+                    <p class="text-slate-500 text-sm mt-2">Kendaraan yang sedang antre, diservis, atau menunggu diambil akan muncul di sini.</p>
                 </div>
             @else
                 <div class="grid grid-cols-1 gap-6 mb-12">
                     @foreach($activeServices as $service)
                     <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white p-6 lg:p-8 relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.1)] transition-all duration-300">
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-red-600 to-red-400"></div>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r {{ $service->status == 'finished' ? 'from-green-500 to-emerald-400' : 'from-red-600 to-red-400' }}"></div>
                         
                         <div class="flex flex-col md:flex-row justify-between items-center gap-6 border-b border-slate-100 pb-6">
                             <div class="text-center md:text-left">
@@ -98,39 +101,73 @@
                                 <p class="text-sm text-slate-500 mt-2">Keluhan: <span class="text-slate-800 font-semibold bg-slate-100 px-2 py-1 rounded">{{ $service->complaint }}</span></p>
                             </div>
                             <div class="text-center md:text-right bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Estimasi Biaya Sementara</p>
-                                <span class="text-3xl font-black text-red-600">Rp {{ number_format($service->total_cost, 0, ',', '.') }}</span>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tagihan Servis</p>
+                                <span class="text-3xl font-black {{ $service->status == 'finished' ? 'text-green-600' : 'text-red-600' }}">Rp {{ number_format($service->total_cost, 0, ',', '.') }}</span>
                             </div>
                         </div>
 
-                        <div class="relative max-w-2xl mx-auto px-4 mt-8 mb-2">
+                        <div class="flex justify-between items-center bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 mb-6 mt-6">
+                            <span class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas fa-wrench text-gray-400"></i> Mekanik yang Bertugas
+                            </span>
+                            
+                            @if($service->mechanic)
+                                <span class="text-sm font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5 shadow-sm">
+                                    <span class=""></span>
+                                    <i class="fas fa-user-cog mr-0.5"></i> {{ $service->mechanic->name }}
+                                </span>
+                            @else
+                                <span class="text-xs font-bold text-gray-400 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
+                                    <i class="fas fa-hourglass-start"></i> Menunggu Mekanik
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="relative max-w-2xl mx-auto px-4 mt-8 mb-4">
                             <div class="absolute top-6 left-0 w-full h-1.5 bg-slate-200 rounded-full z-0"></div>
-                            <div class="absolute top-6 left-0 h-1.5 bg-gradient-to-r from-red-600 to-red-400 transition-all duration-1000 z-0 rounded-full" 
-                                 style="width: {{ $service->status == 'pending' ? '0%' : '50%' }}"></div>
+                            
+                            <div class="absolute top-6 left-0 h-1.5 bg-gradient-to-r from-red-600 to-red-400 transition-all duration-1000 z-0 rounded-l-full {{ $service->status != 'finished' ? 'rounded-r-full' : '' }}" 
+                                style="width: {{ $service->status == 'pending' ? '0%' : '50%' }}"></div>
+                            
+                            <div class="absolute top-6 left-[50%] h-1.5 bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-1000 z-0 rounded-r-full" 
+                                style="width: {{ $service->status == 'finished' ? '50%' : '0%' }}"></div>
                             
                             <div class="relative z-10 flex justify-between">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center transition-all duration-500 {{ in_array($service->status, ['pending', 'processing']) ? 'bg-red-600 text-white shadow-md' : 'bg-slate-100 text-slate-400' }}">
+                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center transition-all duration-500 bg-red-600 text-white shadow-md">
                                         <i class="fas fa-clipboard-list"></i>
                                     </div>
-                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest {{ $service->status == 'pending' ? 'text-red-600' : 'text-slate-400' }}">Antrean</p>
+                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest text-red-600">Antrean</p>
                                 </div>
                                 
                                 <div class="flex flex-col items-center">
-                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center transition-all duration-500 {{ $service->status == 'processing' ? 'bg-red-600 text-white shadow-md' : 'bg-slate-100 text-slate-400' }}">
+                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center transition-all duration-500 {{ in_array($service->status, ['processing', 'finished']) ? 'bg-red-600 text-white shadow-md' : 'bg-slate-100 text-slate-400' }}">
                                         <i class="fas fa-tools"></i>
                                     </div>
-                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest {{ $service->status == 'processing' ? 'text-red-600' : 'text-slate-400' }}">Dikerjakan</p>
+                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest {{ in_array($service->status, ['processing', 'finished']) ? 'text-red-600' : 'text-slate-400' }}">Dikerjakan</p>
                                 </div>
                                 
                                 <div class="flex flex-col items-center">
-                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center bg-slate-100 text-slate-400 transition-all duration-500">
+                                    <div class="w-12 h-12 rounded-full border-4 border-white flex items-center justify-center transition-all duration-500 {{ $service->status == 'finished' ? 'bg-green-500 text-white shadow-md animate-bounce' : 'bg-slate-100 text-slate-400' }}">
                                         <i class="fas fa-check-double"></i>
                                     </div>
-                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest text-slate-400">Selesai</p>
+                                    <p class="mt-2 text-xs font-bold uppercase tracking-widest {{ $service->status == 'finished' ? 'text-green-600' : 'text-slate-400' }}">Selesai</p>
                                 </div>
                             </div>
                         </div>
+
+                        @if($service->status == 'finished')
+                        <div class="mt-8 p-5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl flex items-center gap-4 shadow-sm animate-fade-in-up">
+                            <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center text-xl shadow-md shrink-0">
+                                <i class="fas fa-bell animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-black text-green-900 uppercase tracking-widest mb-1">Motor Siap Diambil!</h4>
+                                <p class="text-xs text-green-700 font-medium">Kendaraan Anda telah selesai diperbaiki. Silakan menuju kasir untuk melakukan pelunasan tagihan dan pengambilan kendaraan.</p>
+                            </div>
+                        </div>
+                        @endif
+
                     </div>
                     @endforeach
                 </div>
@@ -140,7 +177,7 @@
         <div class="animate-fade-in-up" style="animation-delay: 0.2s;">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 relative z-20">
                 <h2 class="text-xl font-bold text-slate-800 flex items-center">
-                    <div class="w-8 h-8 rounded-lg bg-white shadow-sm border border-slate-100 text-slate-500 flex items-center justify-center mr-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center mr-3 shadow-inner">
                         <i class="fas fa-history"></i>
                     </div>
                     Riwayat Transaksi
@@ -218,7 +255,7 @@
             
             @if($historyServices->isEmpty())
                 <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white p-8 text-center shadow-sm">
-                    <p class="text-slate-500 text-sm">Belum ada riwayat servis yang selesai.</p>
+                    <p class="text-slate-500 text-sm">Belum ada riwayat servis yang telah dilunasi.</p>
                 </div>
             @else
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10" id="historyContainer">
@@ -229,11 +266,7 @@
                         
                         <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
                             <div>
-                                @if($service->status == 'lunas')
-                                    <span class="inline-block text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 px-2 py-1 rounded-md uppercase tracking-wider mb-2"><i class="fas fa-check-double mr-1"></i> Lunas</span>
-                                @else
-                                    <span class="inline-block text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 px-2 py-1 rounded-md uppercase tracking-wider mb-2"><i class="fas fa-check mr-1"></i> Selesai (Siap Ambil)</span>
-                                @endif
+                                <span class="inline-block text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 px-2 py-1 rounded-md uppercase tracking-wider mb-2"><i class="fas fa-check-double mr-1"></i> Lunas</span>
 
                                 <h4 class="font-black text-slate-900 text-lg">{{ $service->vehicle->license_plate }}</h4>
                                 <p class="text-xs text-slate-500 font-medium">{{ $service->vehicle->brand }} {{ $service->vehicle->model }}</p>
@@ -251,6 +284,19 @@
                                 @endif
 
                             </div>
+                        </div>
+
+                        <div class="mb-5 bg-red-50/60 p-4 rounded-xl border border-red-100/70 relative overflow-hidden">
+                            <div class="absolute right-3 top-2 text-red-200/40 text-3xl pointer-events-none">
+                                <i class="fas fa-comment-alt"></i>
+                            </div>
+                            
+                            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                <i class=""></i> Keluhan / Gejala Kerusakan
+                            </p>
+                            <p class="text-sm text-gray-700 font-bold italic tracking-wide">
+                                "{{ $service->complaint }}"
+                            </p>
                         </div>
                         
                         <div class="flex-grow mb-5">

@@ -26,12 +26,12 @@
             
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 border-b pb-2">Informasi Kendaraan</h3>
             <div class="text-center mb-6">
-                <span class="inline-block px-4 py-2 bg-gray-900 text-white text-xl font-black rounded-lg tracking-widest mb-2 shadow-inner">
-                    {{ $service->historical_license_plate ?? ($service->vehicle->license_plate ?? 'PLAT DIHAPUS') }}
+                <span class="inline-block px-4 py-2 bg-gray-900 text-white text-xl font-black rounded-lg tracking-widest mb-2 shadow-inner {{ !$service->vehicle ? 'line-through bg-gray-400' : '' }}">
+                    {{ $service->vehicle->license_plate ?? 'PLAT DIHAPUS' }}
                 </span>
                 
-                <p class="text-lg font-bold text-gray-800">
-                    {{ $service->historical_vehicle_motor ?? ($service->vehicle ? $service->vehicle->brand . ' ' . $service->vehicle->model : 'Kendaraan Tidak Diketahui') }}
+                <p class="text-lg font-bold {{ $service->vehicle ? 'text-gray-800' : 'text-gray-400 line-through' }}">
+                    {{ $service->vehicle ? $service->vehicle->brand . ' ' . $service->vehicle->model : 'Kendaraan Tidak Diketahui' }}
                 </p>
                 
                 <p class="text-sm text-gray-500">
@@ -42,15 +42,15 @@
             <div class="space-y-3 text-sm">
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                     <span class="text-gray-500"><i class="fas fa-user text-gray-400 w-4 text-center mr-1"></i> Pelanggan:</span>
-                    <span class="font-bold text-gray-800">
-                        {{ $service->historical_customer_name ?? ($service->vehicle->customer->name ?? 'Pelanggan Dihapus') }}
+                    <span class="font-bold {{ isset($service->vehicle->customer) ? 'text-gray-800' : 'text-gray-400 line-through' }}">
+                        {{ $service->vehicle->customer->name ?? 'Pelanggan Dihapus' }}
                     </span>
                 </div>
                 
                 <div class="flex justify-between items-center bg-green-50 p-2 rounded-lg">
                     <span class="text-gray-500"><i class="fab fa-whatsapp text-green-500 w-4 text-center mr-1"></i> WhatsApp:</span>
-                    <span class="font-bold text-green-700">
-                        {{ $service->historical_customer_phone ?? ($service->vehicle->customer->phone_number ?? '-') }}
+                    <span class="font-bold {{ isset($service->vehicle->customer) ? 'text-green-700' : 'text-gray-400 line-through' }}">
+                        {{ $service->vehicle->customer->phone_number ?? '-' }}
                     </span>
                 </div>
                 
@@ -160,18 +160,18 @@
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <i class="fas fa-search text-xs"></i>
                                         </div>
-                                        <input type="text" id="search_sparepart" class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-red-100 focus:border-red-400 outline-none transition-all" placeholder="Cari nama atau kategori..." autocomplete="off" onclick="event.stopPropagation()">
+                                        <input type="text" id="search_sparepart" class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-red-100 focus:border-red-400 outline-none transition-all" placeholder="Cari kode, nama, atau kategori..." autocomplete="off" onclick="event.stopPropagation()">
                                     </div>
                                 </div>
 
                                 <div class="max-h-60 overflow-y-auto custom-scrollbar p-2 space-y-1">
                                     @foreach($spareparts as $sp)
                                         <div class="sparepart-item px-4 py-3 hover:bg-red-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0" 
-                                             onclick="selectSparepartOption('{{ $sp->id }}', '{{ addslashes($sp->name) }} (Rp {{ number_format($sp->price, 0, ',', '.') }})')">
+                                            onclick="selectSparepartOption('{{ $sp->id }}', '[{{ strtoupper($sp->code) }}] {{ addslashes($sp->name) }} (Rp {{ number_format($sp->price, 0, ',', '.') }})')">
                                             
                                             <div class="flex items-center gap-2 mb-0.5">
-                                                <p class="font-bold text-gray-800 sparepart-name">{{ $sp->name }}</p>
-                                                <span class="sparepart-category text-[9px] uppercase tracking-widest bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold">{{ $sp->category ?? 'Lainnya' }}</span>
+                                                <p class="font-bold text-gray-800 sparepart-name"><span class="text-red-500 font-mono text-xs mr-1 uppercase">[{{ strtoupper($sp->code) }}]</span>{{ $sp->name }}</p>
+                                                <span class="sparepart-category text-[9px] uppercase tracking-widest bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold">{{ $sp->category->name ?? 'Lainnya' }}</span>
                                             </div>
 
                                             <div class="flex justify-between items-center mt-1">
@@ -253,18 +253,21 @@
                             <tr class="hover:bg-gray-50 transition group">
                                 <td class="py-4 px-2">
                                     <div class="flex items-start gap-2">
-                                        <div class="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2 group-hover:bg-red-400 transition"></div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-gray-300 mt-2.5 group-hover:bg-red-400 transition"></div>
                                         <div class="flex flex-col">
                                             @if($detail->sparepart)
-                                                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                                                    <span class="font-bold text-gray-700 group-hover:text-gray-900 transition text-base">{{ $detail->sparepart->name }}</span>
+                                                <div class="flex items-center gap-2 mb-1.5">
+                                                    <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono font-bold text-gray-700 uppercase shadow-sm">
+                                                        <i class="fas fa-barcode mr-1 text-gray-400"></i>{{ $detail->sparepart->code }}
+                                                    </span>
                                                     <span class="w-max text-[9px] uppercase tracking-widest bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">
-                                                        {{ $detail->sparepart->category ?? 'Lainnya' }}
+                                                        {{ $detail->sparepart->category->name ?? 'Lainnya' }}
                                                     </span>
                                                 </div>
+                                                <span class="font-black text-gray-800 text-base">{{ $detail->sparepart->name }}</span>
                                             @else
-                                                <span class="font-bold text-gray-400 line-through transition" title="Nama Historis">{{ $detail->historical_name ?? 'Barang Telah Dihapus' }}</span>
-                                                <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5"><i class="fas fa-exclamation-triangle"></i> Dihapus dari Inventaris</span>
+                                                <span class="font-bold text-gray-400 line-through transition" title="Data Suku Cadang Terhapus">Barang Telah Dihapus</span>
+                                                <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5"><i class="fas fa-exclamation-triangle"></i> Dihapus dari Master Data</span>
                                             @endif
                                         </div>
                                     </div>
@@ -312,7 +315,7 @@
                             @method('PUT')
                             <input type="hidden" name="status" value="finished">
                             <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5">
-                                <i class=""></i> Selesaikan Servis
+                                <i class="fas fa-check-double"></i> Selesaikan Servis
                             </button>
                         </form>
 
@@ -359,7 +362,6 @@
         activeDropdownMenu = menu;
         activeDropdownTrigger = trigger;
 
-        // Auto-focus ke search bar
         if (searchInput) {
             setTimeout(() => searchInput.focus(), 50);
         }
@@ -375,7 +377,6 @@
             const icon = document.getElementById(activeDropdownTrigger.id.replace('trigger_', 'chevron_'));
             if(icon) icon.classList.remove('rotate-180', 'text-red-500');
 
-            // Reset Pencarian
             const searchInput = document.getElementById('search_sparepart');
             if (searchInput) {
                 searchInput.value = '';
@@ -407,7 +408,6 @@
     const searchSparepart = document.getElementById('search_sparepart');
     if(searchSparepart){
         searchSparepart.addEventListener('input', function(e) {
-            // PERBAIKAN: Menambahkan 'sparepart-category' agar bisa dicari berdasarkan kategori
             filterDropdown(e.target.value, '.sparepart-item', ['sparepart-name', 'sparepart-category'], 'no_sparepart_found');
         });
     }

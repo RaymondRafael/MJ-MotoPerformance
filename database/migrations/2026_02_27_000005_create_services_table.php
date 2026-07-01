@@ -21,10 +21,10 @@ return new class extends Migration
             $table->foreignId('mechanic_id')->nullable()->constrained('mechanics')->onDelete('set null');
             
             // Tambahkan kolom Snapshot untuk Pelanggan dan Kendaraan
-            $table->string('historical_customer_name')->nullable();
-            $table->string('historical_customer_phone')->nullable();
-            $table->string('historical_license_plate')->nullable();
-            $table->string('historical_vehicle_motor')->nullable();
+            // $table->string('historical_customer_name')->nullable();
+            // $table->string('historical_customer_phone')->nullable();
+            // $table->string('historical_license_plate')->nullable();
+            // $table->string('historical_vehicle_motor')->nullable();
             
             // Perekam jejak nama mekanik 
             $table->string('historical_mechanic_name')->nullable(); 

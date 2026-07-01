@@ -14,6 +14,7 @@
                 
                 <input type="hidden" name="month" id="filterMonth" value="{{ request('month') }}">
                 <input type="hidden" name="year" id="filterYear" value="{{ request('year') }}">
+                <input type="hidden" name="status" id="filterStatus" value="{{ request('status') }}">
 
                 <div class="relative w-full sm:w-auto" id="dropdown-container-month">
                     <div id="dropdown-trigger-month" onclick="toggleFilterDropdown('month')" class="flex items-center w-full sm:w-auto bg-white rounded-xl px-4 py-2 border border-gray-200 hover:border-gray-300 transition-all cursor-pointer select-none min-w-[160px] h-[52px]">
@@ -71,6 +72,49 @@
                     </div>
                 </div>
 
+                <div class="relative w-full sm:w-auto" id="dropdown-container-status">
+                    <div id="dropdown-trigger-status" onclick="toggleFilterDropdown('status')" class="flex items-center w-full sm:w-auto bg-white rounded-xl px-4 py-2 border border-gray-200 hover:border-gray-300 transition-all cursor-pointer select-none min-w-[140px] h-[52px]">
+                        <i class="fas fa-tasks text-gray-500 mr-3 text-lg"></i>
+                        <div class="flex flex-col flex-grow pr-4 text-left">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider -mb-1">Status</span>
+                            <span id="dropdown-label-status" class="text-sm font-bold text-gray-800 truncate max-w-[80px]">
+                                @if(request('status') == 'pending') Menunggu
+                                @elseif(request('status') == 'processing') Dikerjakan
+                                @elseif(request('status') == 'finished') Selesai
+                                @elseif(request('status') == 'lunas') Lunas
+                                @else Semua Status
+                                @endif
+                            </span>
+                        </div>
+                        <i id="dropdown-icon-status" class="fas fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+                    </div>
+
+                    <div id="dropdown-menu-status" class="hidden absolute top-full left-0 mt-2 w-full min-w-[140px] bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden py-2 z-50">
+                        <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                            <div class="dropdown-item-status px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ !request('status') ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('status', '', 'Semua Status', this)">
+                                <span>Semua Status</span>
+                                <i class="fas fa-check text-xs {{ !request('status') ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            <div class="dropdown-item-status px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('status') == 'pending' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('status', 'pending', 'Menunggu', this)">
+                                <span>Menunggu</span>
+                                <i class="fas fa-check text-xs {{ request('status') == 'pending' ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            <div class="dropdown-item-status px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('status') == 'processing' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('status', 'processing', 'Dikerjakan', this)">
+                                <span>Dikerjakan</span>
+                                <i class="fas fa-check text-xs {{ request('status') == 'processing' ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            <div class="dropdown-item-status px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('status') == 'finished' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('status', 'finished', 'Selesai', this)">
+                                <span>Selesai</span>
+                                <i class="fas fa-check text-xs {{ request('status') == 'finished' ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                            <div class="dropdown-item-status px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors flex items-center justify-between {{ request('status') == 'lunas' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}" onclick="selectFilterOption('status', 'lunas', 'Lunas', this)">
+                                <span>Lunas</span>
+                                <i class="fas fa-check text-xs {{ request('status') == 'lunas' ? '' : 'hidden' }} text-red-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Plat/Nama/Keluhan..." 
                         class="px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-red-500 focus:border-red-500 text-sm w-full md:w-64">
@@ -79,7 +123,7 @@
                     </button>
                 </div>
 
-                @if(request()->filled('month') || request()->filled('year') || request()->filled('search'))
+                @if(request()->filled('month') || request()->filled('year') || request()->filled('search') || request()->filled('status'))
                     <a href="{{ route('admin.services.index') }}" 
                     class="bg-white hover:bg-gray-100 text-gray-600 hover:text-red-500 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition whitespace-nowrap shadow-sm h-[38px] flex items-center justify-center" 
                     title="Bersihkan Semua Filter">
@@ -135,10 +179,10 @@
                             </span>
                         @else
                             <span class="font-bold text-gray-400 line-through" title="Data kendaraan telah dihapus">
-                                {{ $service->historical_license_plate ?? 'Data Dihapus' }}
+                                Data Dihapus
                             </span><br>
                             <span class="text-xs text-gray-400 line-through" title="Data kendaraan telah dihapus">
-                                {{ $service->historical_vehicle_motor ?? 'Tidak Diketahui' }}
+                                Tidak Diketahui
                             </span>
                         @endif
                     </td>
@@ -151,10 +195,10 @@
                             </span>
                         @else
                             <span class="text-gray-400 line-through" title="Data pelanggan telah dihapus">
-                                {{ $service->historical_customer_name ?? 'Pelanggan Dihapus' }}
+                                Pelanggan Dihapus
                             </span><br>
                             <span class="text-xs text-gray-400 line-through" title="Data pelanggan telah dihapus">
-                                <i class="fab fa-whatsapp text-gray-400"></i> {{ $service->historical_customer_phone ?? '-' }}
+                                <i class="fab fa-whatsapp text-gray-400"></i> -
                             </span>
                         @endif
                     </td>
@@ -231,8 +275,10 @@
         const trigger = document.getElementById(`dropdown-trigger-${tipe}`);
         const icon = document.getElementById(`dropdown-icon-${tipe}`);
 
-        if(tipe === 'month') closeFilterDropdown('year');
-        if(tipe === 'year') closeFilterDropdown('month');
+        // Tutup dropdown lain saat satu dibuka
+        if(tipe === 'month') { closeFilterDropdown('year'); closeFilterDropdown('status'); }
+        if(tipe === 'year') { closeFilterDropdown('month'); closeFilterDropdown('status'); }
+        if(tipe === 'status') { closeFilterDropdown('month'); closeFilterDropdown('year'); }
 
         if (menu.classList.contains('hidden')) {
             menu.classList.remove('hidden');
@@ -256,13 +302,9 @@
     }
 
     function selectFilterOption(tipe, value, label, element) {
-        // 1. Masukkan nilai ke input hidden
         document.getElementById(`filter${tipe.charAt(0).toUpperCase() + tipe.slice(1)}`).value = value;
-        
-        // 2. Ubah teks label utama
         document.getElementById(`dropdown-label-${tipe}`).innerText = label;
 
-        // 3. Reset highlight warna pilihan lain
         const allItems = document.querySelectorAll(`.dropdown-item-${tipe}`);
         allItems.forEach(item => {
             item.classList.remove('bg-red-50', 'text-red-600');
@@ -270,21 +312,19 @@
             item.querySelector('.fa-check').classList.add('hidden');
         });
 
-        // 4. Aktifkan tanda centang pada item baru
         element.classList.add('bg-red-50', 'text-red-600');
         element.classList.remove('text-gray-600', 'hover:bg-gray-50', 'hover:text-gray-900');
         element.querySelector('.fa-check').classList.remove('hidden');
 
         closeFilterDropdown(tipe);
-
-        // 5. FITUR INSTAN: Langsung submit form begitu data diklik!
         document.getElementById('filterForm').submit();
     }
 
-    // Klik di luar area dropdown untuk menutup
+    // Klik di luar area dropdown untuk menutup semua dropdown termasuk status
     document.addEventListener('click', function(event) {
         if (!event.target.closest('#dropdown-container-month')) closeFilterDropdown('month');
         if (!event.target.closest('#dropdown-container-year')) closeFilterDropdown('year');
+        if (!event.target.closest('#dropdown-container-status')) closeFilterDropdown('status');
     });
 </script>
 @endsection

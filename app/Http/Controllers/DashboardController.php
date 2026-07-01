@@ -38,7 +38,7 @@ class DashboardController extends Controller
                                 ->whereYear('created_at', $selectedYear)
                                 ->count();
 
-        // 6. 5 Antrean Teratas (Ini biarkan secara global untuk memantau bengkel secara live)
+        // 6. 5 Antrean Teratas
         $antreanTerbaru = Service::with(['vehicle.customer'])
                                 ->whereIn('status', ['pending', 'processing'])
                                 ->orderBy('created_at', 'asc')

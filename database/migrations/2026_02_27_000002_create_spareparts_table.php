@@ -6,23 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('spareparts', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
             $table->string('name');
+            $table->string('brand'); 
+            
+            // UBAH DI SINI: Menghubungkan ke tabel categories secara aman
+            $table->foreignId('category_id')->constrained('categories')->onDelete('restrict');
+            
             $table->integer('price');
             $table->integer('stock');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('spareparts');

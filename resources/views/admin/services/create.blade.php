@@ -75,7 +75,7 @@
                     <div class="max-h-64 overflow-y-auto custom-scrollbar py-2">
                         @foreach($vehicles as $vehicle)
                             <div class="vehicle-item px-5 py-3 hover:bg-red-50 cursor-pointer transition-colors group border-b border-gray-50 last:border-0 flex items-center gap-3" 
-                                 onclick="selectOption('vehicle', '{{ $vehicle->id }}', '{{ $vehicle->license_plate }} ({{ addslashes($vehicle->customer->name) }})')">
+                                onclick="selectOption('vehicle', '{{ $vehicle->id }}', '{{ $vehicle->license_plate }} ({{ addslashes($vehicle->customer->name) }})')">
                                 <div class="w-2 h-2 rounded-full bg-gray-300 group-hover:bg-red-500 transition-colors"></div>
                                 <div>
                                     <p class="font-bold text-gray-800 group-hover:text-red-600 transition-colors tracking-widest vehicle-plate">{{ $vehicle->license_plate }}</p>
@@ -121,7 +121,7 @@
                     <div class="max-h-64 overflow-y-auto custom-scrollbar py-2">
                         @foreach($mechanics as $mechanic)
                             <div class="mechanic-item px-5 py-3 hover:bg-red-50 cursor-pointer transition-colors group flex items-center gap-3 border-b border-gray-50 last:border-0" 
-                                 onclick="selectOption('mechanic', '{{ $mechanic->id }}', '{{ addslashes($mechanic->name) }}')">
+                                onclick="selectOption('mechanic', '{{ $mechanic->id }}', '{{ addslashes($mechanic->name) }}')">
                                 <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-red-100 group-hover:text-red-500 transition-colors">
                                     <i class="fas fa-user-tie text-xs"></i>
                                 </div>

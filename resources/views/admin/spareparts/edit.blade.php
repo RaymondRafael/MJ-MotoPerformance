@@ -39,13 +39,24 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             
-            <div class="col-span-1 md:col-span-2 relative">
+            <div class="relative">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Kode Barang (SKU) <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fas fa-barcode"></i>
+                    </div>
+                    <input type="text" name="code" required value="{{ old('code', $sparepart->code) }}" placeholder="Contoh: OLI-001"
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 shadow-sm uppercase">
+                </div>
+            </div>
+
+            <div class="relative">
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nama Barang <span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-box-open"></i>
                     </div>
-                    <input type="text" name="name" required value="{{ old('name', $sparepart->name) }}" placeholder="Contoh: Oli Mesin Shell Advance AX7 10W-40 1L"
+                    <input type="text" name="name" required value="{{ old('name', $sparepart->name) }}"
                         class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 shadow-sm">
                 </div>
             </div>
@@ -56,8 +67,8 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fas fa-tag"></i>
                     </div>
-                    <input type="text" name="brand" required value="{{ old('brand', $sparepart->brand) }}" placeholder="Contoh: Shell"
-                        class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 shadow-sm">
+                    <input type="text" name="brand" required value="{{ old('brand', $sparepart->brand) }}" placeholder="Merek barang"
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-gray-800 shadow-sm">
                 </div>
             </div>
 
@@ -66,7 +77,7 @@
                 <div class="relative">
                     <span class="absolute left-4 top-3.5 text-blue-500 text-sm font-black">Rp</span>
                     <input type="text" name="price" required value="{{ number_format(old('price', $sparepart->price), 0, ',', '.') }}" oninput="formatVisual(this)"
-                        class="w-full pl-12 pr-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-black text-gray-900 shadow-sm text-right">
+                        class="w-full pl-12 pr-4 py-3.5 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-black text-gray-900 shadow-sm text-right">
                 </div>
             </div>
 
@@ -76,10 +87,16 @@
             <div class="absolute -right-4 -top-4 text-gray-100 text-6xl transform rotate-12"><i class="fas fa-lock"></i></div>
             
             <div class="flex-1 relative z-10">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Kategori Barang</label>
-                <div class="flex items-center gap-2">
+                <label for="category" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Kategori Barang <span class="text-red-500">*</span></label>
+                <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-300 transition-all">
                     <i class="fas fa-tags text-gray-400"></i>
-                    <span class="font-bold text-gray-600 bg-gray-200 px-3 py-1 rounded-lg text-sm">{{ $sparepart->category }}</span>
+                    <input type="text" 
+                        name="category" 
+                        id="category" 
+                        value="{{ old('category', $sparepart->category) }}" 
+                        class="bg-transparent border-none outline-none text-sm font-bold text-gray-700 w-full placeholder-gray-400"
+                        placeholder="Misal: Oli, Sistem Rem, Aksesoris..."
+                        required>
                 </div>
             </div>
 

@@ -9,6 +9,20 @@ class Sparepart extends Model
 {
     use HasFactory;
 
-    // Hanya tersisa 3 kolom ini
-    protected $fillable = ['name', 'brand', 'category', 'price', 'stock'];
+    // KUNCI PERBAIKANNYA ADA DI SINI:
+    // Hapus 'category', ganti menjadi 'category_id'
+    protected $fillable = [
+        'code', 
+        'name', 
+        'brand', 
+        'category_id', 
+        'price', 
+        'stock'
+    ];
+
+    // Relasi: Setiap sparepart terikat pada satu Kategori
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
 }

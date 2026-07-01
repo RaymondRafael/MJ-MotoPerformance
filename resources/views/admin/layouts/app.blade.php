@@ -52,7 +52,7 @@
         </nav>
 
         <div class="p-4 border-t border-gray-800 bg-gray-900 z-10">
-            <a href="/logout" class="flex items-center justify-center px-4 py-3 bg-gray-800 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-gray-700 hover:border-red-500/30 rounded-xl transition-all font-bold text-sm group">
+            <a href="/logout" onclick="return confirm('Apakah Anda yakin ingin keluar dari sistem MJ-MotoPerformance?')" class="flex items-center justify-center px-4 py-3 bg-gray-800 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-gray-700 hover:border-red-500/30 rounded-xl transition-all font-bold text-sm group">
                 <i class="fas fa-power-off mr-2 group-hover:scale-110 transition-transform"></i> LOGOUT
             </a>
         </div>
@@ -60,7 +60,7 @@
 
     <main class="flex-1 flex flex-col h-screen overflow-y-auto bg-gray-50">
         
-        <header class="bg-white shadow-[0_2px_15px_rgb(0,0,0,0.03)] border-b border-gray-100 px-8 py-5 flex justify-between items-center sticky top-0 z-20">
+        <header class="sticky top-0 z-[99] bg-white shadow-[0_2px_15px_rgb(0,0,0,0.03)] border-b border-gray-100 px-8 py-5 flex justify-between items-center sticky top-0 z-20">
             <h1 class="text-2xl font-black text-gray-900 tracking-tight">@yield('header', 'Dashboard')</h1>
             
             <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100">

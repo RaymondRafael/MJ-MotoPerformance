@@ -11,7 +11,7 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 
-<div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 mt-4">
+<div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 max-w-5xl mx-auto mt-4">
     
     <div class="mb-8 flex items-center justify-between border-b border-gray-100 pb-5">
         <div class="flex items-center">
@@ -20,7 +20,7 @@
             </div>
             <div>
                 <h2 class="text-2xl font-black text-gray-900 tracking-tight">Penerimaan Barang & Stok</h2>
-                <p class="text-gray-500 text-sm mt-1">Stok akan otomatis terformat dengan titik agar mudah dibaca.</p>
+                <p class="text-gray-500 text-sm mt-1">Gunakan Kode Barang (SKU) unik untuk mempermudah pelacakan aset gudang.</p>
             </div>
         </div>
         <a href="{{ route('admin.purchases.index') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:text-blue-600 transition-all font-bold shadow-sm">
@@ -30,7 +30,7 @@
 
     <form action="{{ route('admin.purchases.store') }}" method="POST" id="purchaseForm">
         @if (session('error'))
-            <div class="mb-8 p-5 bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm flex items-start gap-4 fade-in-up">
+            <div class="mb-8 p-5 bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm flex items-start gap-4">
                 <div class="mt-0.5 text-red-500 text-xl"><i class="fas fa-exclamation-circle"></i></div>
                 <div>
                     <h3 class="text-sm font-bold text-red-800 mb-1">Gagal Menyimpan Data:</h3>
@@ -97,7 +97,6 @@
 
                     <div class="w-full lg:w-[40%]">
                         
-                        <!-- BLOK BARANG LAMA -->
                         <div class="existing-fields space-y-3">
                             <div>
                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Pilih Suku Cadang</label>
@@ -115,13 +114,12 @@
                                     </div>
 
                                     <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden">
-                                        
                                         <div class="sticky top-0 bg-white border-b border-gray-100 p-3 z-10">
                                             <div class="relative">
                                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                     <i class="fas fa-search text-xs"></i>
                                                 </div>
-                                                <input type="text" class="search-input w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all" placeholder="Cari nama atau kategori..." autocomplete="off" oninput="filterDropdownList(this)" onclick="event.stopPropagation()">
+                                                <input type="text" class="search-input w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all" placeholder="Cari Kode, Nama, atau Kategori..." autocomplete="off" oninput="filterDropdownList(this)" onclick="event.stopPropagation()">
                                             </div>
                                         </div>
 
@@ -130,16 +128,17 @@
                                                 -- Batal Memilih --
                                             </div>
                                             @foreach($spareparts as $sp)
-                                                <!-- PARAMETER HARGA ( $sp->price ) DIKIRIM KE JS -->
-                                                <div class="dropdown-item px-4 py-3 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors flex items-center justify-between group/item" onclick="selectCustomOption(this, '{{ $sp->id }}', '{{ addslashes($sp->name) }}', '{{ $sp->price }}')">
+                                                <div class="dropdown-item px-4 py-3 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors flex items-center justify-between group/item" onclick="selectCustomOption(this, '{{ $sp->id }}', '[{{ strtoupper($sp->code) }}] {{ addslashes($sp->name) }}', '{{ $sp->price }}')">
                                                     <div class="flex items-center gap-3">
                                                         <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover/item:bg-blue-100 group-hover/item:text-blue-500 transition-colors">
                                                             <i class="fas fa-wrench text-xs"></i>
                                                         </div>
                                                         <div>
                                                             <div class="flex items-center gap-2 mb-0.5">
-                                                                <p class="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors item-name">{{ $sp->name }}</p>
-                                                                <span class="item-category text-[9px] uppercase tracking-widest bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold">{{ $sp->category ?? 'Lainnya' }}</span>
+                                                                <p class="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors item-name">
+                                                                    <span class="text-blue-600 font-mono text-xs mr-1 uppercase">[{{ strtoupper($sp->code) }}]</span>{{ $sp->name }}
+                                                                </p>
+                                                                <span class="item-category text-[9px] uppercase tracking-widest bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-bold">{{ $sp->category->name ?? 'Lainnya' }}</span>
                                                             </div>
                                                             @if($sp->stock <= 5)
                                                                 <p class="text-[10px] text-red-500 uppercase tracking-widest font-black mt-0.5"><i class="fas fa-exclamation-triangle mr-1"></i> Stok Menipis: {{ $sp->stock }}</p>
@@ -160,7 +159,6 @@
                                 </div>
                             </div>
                             
-                            <!-- KOLOM INFO HARGA JUAL (READ ONLY) -->
                             <div class="relative info-harga-container hidden">
                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Harga Jual Di Sistem (Info)</label>
                                 <div class="relative">
@@ -170,52 +168,88 @@
                             </div>
                         </div>
 
-                        <!-- BLOK BARANG BARU -->
                         <div class="new-fields hidden grid grid-cols-2 gap-3">
                             <div class="col-span-2 relative">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Nama Barang Baru</label>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Kode Barang (SKU) <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400">
+                                        <i class="fas fa-barcode text-xs"></i>
+                                    </div>
+                                    <input type="text" name="items[0][new_code]" placeholder="Contoh: OLI-MPX2-01" class="sku-input w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none uppercase">
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 relative">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Nama Barang Baru <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400"><i class="fas fa-box-open text-xs"></i></div>
                                     <input type="text" name="items[0][new_name]" placeholder="Misal: Oli Shell Advance" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
                                 </div>
                             </div>
-                            <div class="relative">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Merek</label>
+
+                            <div class="col-span-2 relative">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Merek <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-400"><i class="fas fa-tag text-xs"></i></div>
-                                    <input type="text" name="items[0][brand]" placeholder="Shell" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
+                                    <input type="text" name="items[0][brand]" placeholder="Shell / Honda" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
                                 </div>
                             </div>
                             
-                            <div class="relative">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Kategori <span class="text-red-500">*</span></label>
+                            <!-- DROPDOWN KATEGORI BARU DENGAN SEARCH & DEFAULT KOSONG -->
+                            <div class="col-span-2 relative">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Pilih Kategori</label>
                                 <div class="relative custom-dropdown" data-type="category">
-                                    <input type="hidden" name="items[0][new_category]" class="category-input" value="{{ $categories[0] ?? 'Oli' }}">
+                                    <input type="hidden" name="items[0][new_category]" class="category-input" value="">
                                     
-                                    <div class="dropdown-trigger w-full pl-11 pr-10 py-3 bg-white border border-blue-200 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all group" onclick="toggleCustomDropdown(this)">
+                                    <div class="dropdown-trigger w-full pl-11 pr-10 py-3 bg-white border border-blue-200 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all group" onclick="toggleCustomDropdown(this, true)">
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
                                             <i class="fas fa-tags text-xs"></i>
                                         </div>
-                                        <span class="text-sm font-black text-gray-700 selected-label truncate">{{ $categories[0] ?? 'Oli' }}</span>
+                                        <span class="text-sm font-bold text-gray-400 selected-label truncate">-- Belum Terpilih --</span>
                                         <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-blue-400 transition-transform duration-300 arrow-icon">
                                             <i class="fas fa-chevron-down text-xs"></i>
                                         </div>
                                     </div>
 
-                                    <div class="dropdown-menu hidden absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
-                                        <div class="p-2 space-y-1">
+                                    <div class="dropdown-menu hidden absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden">
+                                        <div class="sticky top-0 bg-white border-b border-gray-100 p-2 z-10">
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                    <i class="fas fa-search text-[10px]"></i>
+                                                </div>
+                                                <input type="text" class="search-input w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all" placeholder="Cari kategori..." autocomplete="off" oninput="filterDropdownList(this)" onclick="event.stopPropagation()">
+                                            </div>
+                                        </div>
+
+                                        <div class="dropdown-list-container max-h-48 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                                            <div class="dropdown-item px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-lg transition-colors font-bold text-gray-400 text-xs flex items-center gap-3" onclick="selectCustomOption(this, '', '-- Belum Terpilih --')">
+                                                -- Batal Memilih --
+                                            </div>
                                             @foreach($categories as $cat)
-                                                <div class="px-4 py-2.5 hover:bg-blue-50 cursor-pointer rounded-xl transition-colors font-bold text-gray-800 text-xs flex items-center gap-3" onclick="selectCustomOption(this, '{{ $cat }}', '{{ $cat }}')">
-                                                    {{ $cat }}
+                                                <div class="dropdown-item px-4 py-2 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors font-bold text-gray-800 text-xs flex items-center gap-3" onclick="selectCustomOption(this, '{{ $cat }}', '{{ $cat }}')">
+                                                    <span class="item-name">{{ $cat }}</span>
                                                 </div>
                                             @endforeach
+                                            <div class="no-item-found hidden px-4 py-4 text-center">
+                                                <p class="text-xs font-bold text-gray-500">Kategori tidak ditemukan.</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-span-2 relative">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Harga Jual Nanti</label>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Atau Tulis Kategori Baru <span class="text-gray-400 font-normal">(Kosongkan jika menggunakan pilihan di atas)</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <i class="fas fa-folder-plus text-xs"></i>
+                                    </div>
+                                    <input type="text" name="items[0][custom_category]" placeholder="Misal: Kelistrikan / Aksesoris" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none">
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 relative">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Harga Jual Nanti <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-3 text-blue-400 text-xs font-bold">Rp</span>
                                     <input type="text" name="items[0][selling_price]" placeholder="125.000" oninput="formatVisual(this)" class="w-full pl-9 pr-3 py-3 bg-white border border-blue-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none text-right">
@@ -314,7 +348,7 @@
             }
         });
         document.querySelectorAll('.arrow-icon').forEach(arrow => {
-            arrow.classList.remove('rotate-180', 'text-blue-500');
+            arrow.arrow = arrow.classList.remove('rotate-180', 'text-blue-500');
         });
         document.querySelectorAll('.item-row').forEach(r => r.style.zIndex = '10');
         activeDropdownMenu = null;
@@ -326,7 +360,6 @@
         }
     });
 
-    // FUNGSI SELECT UPDATE (MENERIMA HARGA JUAL)
     function selectCustomOption(optionElement, value, labelText, sellingPrice = '') {
         const dropdownContainer = optionElement.closest('.custom-dropdown');
         const trigger = dropdownContainer.querySelector('.dropdown-trigger');
@@ -351,7 +384,6 @@
             applyModeStyles(dropdownContainer, value);
         }
 
-        // KODE MENAMPILKAN INFO HARGA JUAL
         if (type === 'sparepart') {
             const row = dropdownContainer.closest('.item-row');
             const infoContainer = row.querySelector('.info-harga-container');
@@ -361,7 +393,6 @@
                 infoContainer.classList.remove('hidden');
                 infoInput.value = parseInt(sellingPrice).toLocaleString('id-ID');
                 
-                // Animasi visual kedip biru
                 infoInput.classList.remove('bg-gray-100', 'text-gray-500');
                 infoInput.classList.add('bg-blue-50', 'text-blue-600');
                 setTimeout(() => {
@@ -402,6 +433,7 @@
         }
     }
 
+    // ALGORITMA LIVE SEARCH: MENCAKUP PENCARIAN KODE BARANG, NAMA, DAN KATEGORI
     function filterDropdownList(inputElement) {
         const query = inputElement.value.toLowerCase();
         const container = inputElement.closest('.dropdown-menu').querySelector('.dropdown-list-container');
@@ -414,10 +446,10 @@
             const categoryElement = item.querySelector('.item-category');
 
             if (nameElement) {
-                const name = nameElement.innerText.toLowerCase();
+                const fullText = nameElement.innerText.toLowerCase();
                 const category = categoryElement ? categoryElement.innerText.toLowerCase() : '';
 
-                if (name.includes(query) || category.includes(query)) {
+                if (fullText.includes(query) || category.includes(query)) {
                     item.classList.remove('hidden');
                     item.classList.add('flex');
                     hasVisibleItem = true;
@@ -466,12 +498,18 @@
             if(input.type === 'hidden') {
                 if(input.classList.contains('mode-input')) input.value = 'existing';
                 if(input.classList.contains('sparepart-input')) input.value = '';
-                if(input.classList.contains('category-input')) input.value = 'Oli';
+                
+                // Kategori kini di-reset menjadi kosong (Belum Terpilih)
+                if(input.classList.contains('category-input')) input.value = '';
             } else {
                 if(input.classList.contains('search-input')) {
                     input.value = ''; 
                 } else if(!input.classList.contains('info-harga-input')) {
                     input.value = input.classList.contains('qty-input') ? '1' : '';
+                }
+                
+                if(input.name.includes('custom_category')) {
+                    input.value = '';
                 }
             }
         });
@@ -495,12 +533,13 @@
         sparepartLabel.className = "text-sm font-bold text-gray-400 selected-label truncate";
         sparepartLabel.innerText = "-- Pilih Suku Cadang --";
 
+        // RESET DROPDOWN KATEGORI SAAT KLONING BARIS BARU
         const categoryTrigger = template.querySelector('.custom-dropdown[data-type="category"] .dropdown-trigger');
         if (categoryTrigger) {
             categoryTrigger.className = "dropdown-trigger w-full pl-11 pr-10 py-3 bg-white border border-blue-200 rounded-xl flex items-center justify-between cursor-pointer focus:ring-4 focus:ring-blue-50 transition-all group";
             const categoryLabel = template.querySelector('.custom-dropdown[data-type="category"] .selected-label');
-            categoryLabel.className = "text-sm font-black text-gray-700 selected-label truncate";
-            categoryLabel.innerText = "Oli"; 
+            categoryLabel.className = "text-sm font-bold text-gray-400 selected-label truncate";
+            categoryLabel.innerText = "-- Belum Terpilih --"; 
         }
 
         template.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
@@ -509,7 +548,6 @@
         template.querySelector('.existing-fields').classList.remove('hidden');
         template.querySelector('.new-fields').classList.add('hidden');
 
-        // KODE BARU: Reset kolom info harga di baris yang baru ditambah
         const infoContainer = template.querySelector('.info-harga-container');
         if(infoContainer) {
             infoContainer.classList.add('hidden');

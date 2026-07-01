@@ -51,7 +51,7 @@
                     <td class="p-4">
                         <div class="font-bold text-gray-900">{{ $customer->name }}</div>
                         <div class="text-xs text-gray-500 mt-1">
-                            <i class="fas fa-envelope text-gray-400 mr-1"></i> {{ $customer->user->email ?? 'Email tidak tertaut' }}
+                            <i class="fas fa-envelope text-gray-400 mr-1"></i> {{ $customer->email ?? 'Email tidak tertaut' }}
                         </div>
                     </td>
                     <td class="p-4"><i class="fab fa-whatsapp text-green-500 mr-1"></i> {{ $customer->phone_number }}</td>

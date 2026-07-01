@@ -20,7 +20,7 @@ class CustomerController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil pelanggan tidak ditemukan.'], 404);
         }
 
-        // 1. untuk filter bulan & tahun
+        // 1. untuk filter bulan & tahun pada riwayat
         $month = $request->query('month');
         $year = $request->query('year');
 
@@ -30,14 +30,14 @@ class CustomerController extends Controller
                 $query->where('customer_id', $customer->id);
             });
 
-        // 3. Ambil data servis aktif (pending & processing)
+        // 3. Masukkan 'finished' ke Active Services agar sinkron dengan Web Tracking
         $activeServices = (clone $baseQuery)
-            ->whereIn('status', ['pending', 'processing'])
+            ->whereIn('status', ['pending', 'processing', 'finished']) 
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 4. Ambil data riwayat servis (finished, lunas, completed, paid)
-        $historyQuery = (clone $baseQuery)->whereIn('status', ['finished', 'lunas', 'completed', 'paid']);
+        // 4. History hanya memuat yang sudah 'lunas' 
+        $historyQuery = (clone $baseQuery)->whereIn('status', ['lunas', 'completed', 'paid']);
         
         // Jika ada filter bulan & tahun, terapkan ke Riwayat
         if ($month && $year) {
@@ -52,13 +52,28 @@ class CustomerController extends Controller
             'data' => [
                 'customer_name' => $customer->name,
                 
-                // untuk menampilkan data servis aktif di aplikasi mobile
+                // DATA SERVIS AKTIF
                 'active' => $activeServices->map(function($service) {
                     return [
                         'id' => $service->id,
                         'status' => $service->status,
                         'complaint' => $service->complaint,
                         'total_cost' => (float) ($service->total_cost ?? 0),
+                        'jasa_servis' => (float) ($service->service_cost ?? 0),
+                        
+                        // Menampilkan data mekanik bertugas secara di aplikasi mobile
+                        'mekanik' => $service->mechanic?->name, 
+                        'historical_mechanic_name' => $service->historical_mechanic_name,
+                        
+                        // Menyertakan rincian barang agar aplikasi mobile bisa menampilkan detail belanjaan saat diservis
+                        'rincian_suku_cadang' => $service->details->map(function($detail) {
+                            return [
+                                'nama' => $detail->sparepart?->name, 
+                                'historical_name' => $detail->historical_name, 
+                                'qty' => $detail->quantity,
+                                'subtotal' => (float) ($detail->subtotal ?? 0),
+                            ];
+                        }),
                         'vehicle' => [
                             'plat' => $service->vehicle?->license_plate ?? '-',
                             'merek' => ($service->vehicle?->brand ?? '') . ' ' . ($service->vehicle?->model ?? ''),
@@ -66,35 +81,25 @@ class CustomerController extends Controller
                     ];
                 }),
                 
-                // untuk menampilkan data riwayat servis di aplikasi mobile
+                // DATA RIWAYAT SERVIS
                 'history' => $historyServices->map(function($service) {
                     return [
                         'id' => $service->id,
-                        
-                        // Mengirimkan status agar badge bisa berubah jadi Ungu (Lunas)
                         'status' => $service->status, 
-                        
                         'tanggal' => $service->created_at ? $service->created_at->format('d M Y') : '-',
                         'keluhan' => $service->complaint,
-                        
-                        // Pisahkan mekanik aktif dan mekanik historis
                         'mekanik' => $service->mechanic?->name, 
                         'historical_mechanic_name' => $service->historical_mechanic_name,
-                        
                         'biaya' => (float) ($service->total_cost ?? 0),
                         'jasa_servis' => (float) ($service->service_cost ?? 0),
-                        
                         'rincian_suku_cadang' => $service->details->map(function($detail) {
                             return [
-                                // Pisahkan barang aktif dan barang historis
                                 'nama' => $detail->sparepart?->name, 
                                 'historical_name' => $detail->historical_name, 
-                                
                                 'qty' => $detail->quantity,
                                 'subtotal' => (float) ($detail->subtotal ?? 0),
                             ];
                         }),
-                        
                         'vehicle' => [
                             'plat' => $service->vehicle?->license_plate ?? '-',
                             'merek' => ($service->vehicle?->brand ?? '') . ' ' . ($service->vehicle?->model ?? ''),

@@ -12,7 +12,6 @@ class PurchaseDetail extends Model
     protected $fillable = [
         'purchase_id', 
         'sparepart_id', 
-        'historical_name', 
         'historical_price',
         'quantity', 
         'price', 

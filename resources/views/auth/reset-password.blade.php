@@ -40,7 +40,7 @@
                 <span class="text-white">BUAT PASSWORD BARU</span>
             </h1>
             <p class="text-gray-400 text-sm font-medium px-2 leading-relaxed">
-                Hampir selesai! Silakan masukkan kata sandi baru yang kuat untuk akun Anda.
+                Silakan masukkan kata sandi baru yang kuat untuk akun Anda.
             </p>
         </div>
 

@@ -393,8 +393,8 @@
             <div class="nav-right">
                 <a href="#beranda" class="nav-link">Beranda</a>
                 <a href="#layanan" class="nav-link">Layanan</a>
-                <a href="/login" class="nav-link">Masuk</a>
-                <a href="/register" class="nav-btn">Daftar Akun</a>
+                <a href="{{ url('/login') }}" class="nav-link">Masuk</a>
+                <a href="{{ url('/register') }}" class="nav-btn">Daftar Akun</a>
             </div>
         </div>
     </nav>
@@ -411,7 +411,7 @@
             <h1>Servis Motor<br><span class="accent">Lebih Transparan</span></h1>
             <p>Pantau riwayat servis, rincian biaya, dan status pengerjaan kendaraan Anda secara real-time langsung dari genggaman.</p>
             <div class="hero-actions">
-                <a href="/register" class="btn-primary">
+                <a href="{{ url('/register') }}" class="btn-primary">
                     <i class="fas fa-rocket"></i> Mulai Sekarang
                 </a>
                 <a href="#layanan" class="btn-secondary">
@@ -517,8 +517,8 @@
                 <p>Bergabung sekarang dan nikmati kemudahan memantau kendaraan Anda secara digital.</p>
             </div>
             <div class="cta-actions">
-                <a href="/register" class="btn-cta-white"><i class="fas fa-rocket"></i> Daftar Gratis</a>
-                <a href="/login" class="btn-cta-outline"><i class="fas fa-sign-in-alt"></i> Masuk</a>
+                <a href="{{ url('/register') }}" class="btn-cta-white"><i class="fas fa-rocket"></i> Daftar Gratis</a>
+                <a href="{{ url('/login') }}" class="btn-cta-outline"><i class="fas fa-sign-in-alt"></i> Masuk</a>
             </div>
         </div>
     </section>
@@ -537,8 +537,8 @@
                 <div class="footer-links">
                     <a href="#beranda">Beranda</a>
                     <a href="#layanan">Layanan</a>
-                    <a href="/login">Masuk</a>
-                    <a href="/register">Daftar</a>
+                    <a href="{{ url('/login') }}">Masuk</a>
+                    <a href="{{ url('/register') }}">Daftar</a>
                 </div>
             </div>
             <div class="footer-bottom">

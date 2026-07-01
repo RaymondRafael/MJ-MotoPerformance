@@ -74,17 +74,20 @@
                         <tr class="hover:bg-gray-50/50 transition group">
                             <td class="py-5 px-6">
                                 <div class="flex items-start gap-3">
-                                    <div class="w-2 h-2 rounded-full bg-gray-300 mt-2 group-hover:bg-red-400 transition-colors"></div>
+                                    <div class="w-2 h-2 rounded-full bg-gray-300 mt-2.5 group-hover:bg-red-400 transition-colors"></div>
                                     <div class="flex flex-col">
                                         @if($detail->sparepart)
-                                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                                                <span class="font-bold text-gray-800 text-base">{{ $detail->sparepart->name }}</span>
+                                            <div class="flex items-center gap-2 mb-1.5">
+                                                <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono font-bold text-gray-700 uppercase shadow-sm">
+                                                    <i class="fas fa-barcode mr-1 text-gray-400"></i>{{ $detail->sparepart->code }}
+                                                </span>
                                                 <span class="w-max text-[9px] uppercase tracking-widest bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">
-                                                    {{ $detail->sparepart->category ?? 'Lainnya' }}
+                                                    {{ $detail->sparepart->category->name ?? 'Lainnya' }}
                                                 </span>
                                             </div>
+                                            <span class="font-black text-gray-900 text-base">{{ $detail->sparepart->name }}</span>
                                         @else
-                                            <span class="font-bold text-gray-500 text-base line-through opacity-70" title="Nama Historis">{{ $detail->historical_name }}</span>
+                                            <span class="font-bold text-gray-500 text-base line-through opacity-70" title="Data Telah Dihapus">Barang Dihapus</span>
                                             <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5"><i class="fas fa-exclamation-triangle"></i> Dihapus dari Master Inventaris</span>
                                         @endif
                                     </div>

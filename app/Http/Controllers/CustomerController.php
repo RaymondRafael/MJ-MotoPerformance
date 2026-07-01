@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class CustomerController extends Controller
@@ -15,14 +13,12 @@ class CustomerController extends Controller
     {
         $search = $request->search;
 
-        // Gunakan with('user') untuk memanggil email, 
-        // dan tambahkan logika orWhereHas agar admin bisa mencari berdasarkan email.
-        $customers = Customer::with('user')->when($search, function ($query, $search) {
+        // UBAH: Tidak perlu lagi menggunakan with('user') atau orWhereHas.
+        // Karena kolom email sekarang ada DILAM tabel customers itu sendiri!
+        $customers = Customer::when($search, function ($query, $search) {
             return $query->where('name', 'like', "%{$search}%")
                         ->orWhere('phone_number', 'like', "%{$search}%")
-                        ->orWhereHas('user', function ($q) use ($search) {
-                            $q->where('email', 'like', "%{$search}%");
-                        });
+                        ->orWhere('email', 'like', "%{$search}%"); // <-- Pencarian email langsung!
         })->latest()->paginate(10);
 
         return view('admin.customers.index', compact('customers'));
@@ -43,7 +39,7 @@ class CustomerController extends Controller
                 'string',
                 'email',
                 'max:255',
-                'unique:users,email',
+                'unique:customers,email',
                 function ($attribute, $value, $fail) {
                     $allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
                     $domain = explode('@', $value)[1] ?? '';
@@ -53,7 +49,7 @@ class CustomerController extends Controller
                 },
             ],
             'password'     => 'required|string|min:6',
-            // ATURAN NOMOR WHATSAPP (STORE)
+            // ATURAN NOMOR WHATSAPP
             'phone_number' => [
                 'bail',
                 'required',
@@ -72,46 +68,31 @@ class CustomerController extends Controller
             'email.unique' => 'Email ini sudah terdaftar di sistem kami.',
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal harus 6 karakter.',
-            
-            // Kamus Error Nomor WhatsApp
             'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
             'phone_number.regex' => 'Format nomor tidak valid. Gunakan HANYA ANGKA (tanpa spasi/simbol - . *) and awali dengan 08 atau 628 atau +62 atau 8.',
             'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
             'phone_number.max' => 'Nomor terlalu panjang. Maksimal 15 angka.',
             'phone_number.unique' => 'Nomor WhatsApp ini sudah terdaftar.',
-            
             'address.required' => 'Alamat domisili wajib diisi.',
         ]);
 
-        DB::beginTransaction();
-
         try {
-            // 1. Buat Akun Login
-            $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,
-                'password' => Hash::make($request->password),
-                'role'     => 'customer',
-            ]);
-
-            // 2. Buat Profil Pelanggan
+            // UBAH: Cukup 1 perintah Create saja untuk membuat Pelanggan + Passwordnya
             Customer::create([
-                'user_id'      => $user->id,
                 'name'         => $request->name,
+                'email'        => $request->email,
+                'password'     => Hash::make($request->password), // Password langsung disimpan di tabel customer
                 'phone_number' => $request->phone_number,
                 'address'      => $request->address,
             ]);
-
-            DB::commit();
 
             // 3. KIRIM PESAN SELAMAT DATANG VIA WHATSAPP
             $this->kirimWelcomeWA($request->phone_number, $request->name);
 
             return redirect()->route('admin.customers.index')
-                            ->with('success', 'Akun berhasil dibuat dan pesan sambutan WhatsApp telah dikirim!');
+                            ->with('success', 'Akun pelanggan berhasil dibuat dan pesan sambutan WhatsApp telah dikirim!');
 
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage())->withInput();
         }
     }
@@ -130,7 +111,7 @@ class CustomerController extends Controller
             }
 
             $pesan = "Halo *{$name}*, selamat datang di MJ MotoPerformance!\n\n";
-            $pesan .= "Terima kasih telah bergabung. Akun Anda telah berhasil didaftarkan di sistem kami.\n\n";
+            $pesan .= "Terima kasih telah bergabung. Akun Anda telah berhasil didaftarkan di sistem kami oleh Admin.\n\n";
             $pesan .= "Mulai sekarang, segala informasi mengenai *Update Status Pengerjaan* dan *Rincian Tagihan Servis* kendaraan Anda akan dikirimkan secara otomatis melalui nomor WhatsApp ini.\n\n";
             $pesan .= "Anda juga dapat memantau riwayat servis melalui Aplikasi Mobile kami. Jika ada pertanyaan, jangan ragu untuk membalas pesan ini!\n\n";
             $pesan .= "Salam hangat,\n*Tim MJ MotoPerformance*";
@@ -145,7 +126,7 @@ class CustomerController extends Controller
             ]);
 
         } catch (\Exception $e) {
-
+            // Biarkan kosong agar jika WA gagal, pendaftaran tetap berhasil
         }
     }
 
@@ -159,6 +140,8 @@ class CustomerController extends Controller
         // 1. Validasi Input Update dengan Aturan WhatsApp
         $request->validate([
             'name' => 'required|string|max:255',
+            // Tambahkan validasi email jika Admin ingin mengubah email pelanggan
+            'email' => 'required|email|unique:customers,email,' . $customer->id,
             'phone_number' => [
                 'bail',
                 'required',
@@ -172,6 +155,8 @@ class CustomerController extends Controller
         ], [
             // Kamus Error untuk Update
             'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.unique' => 'Email ini sudah digunakan oleh pelanggan lain.',
             'phone_number.required' => 'Nomor WhatsApp wajib diisi.',
             'phone_number.regex' => 'Format nomor tidak valid. Gunakan HANYA ANGKA (tanpa spasi/simbol - . *) and awali dengan 08 atau 628 atau +62 atau 8.',
             'phone_number.min' => 'Nomor terlalu pendek. Minimal 10 angka.',
@@ -182,35 +167,23 @@ class CustomerController extends Controller
         ]);
 
         // 2. Update data profil pelanggan (Tabel customers)
-        $customer->update($request->all());
+        // Cukup satu baris ini saja, tidak perlu update ke tabel users lagi!
+        $customer->update($request->only(['name', 'email', 'phone_number', 'address']));
 
-        // 3. Ikut ubah nama di tabel Users agar di React juga berubah
-        if ($customer->user_id) {
-            \App\Models\User::where('id', $customer->user_id)->update([
-                'name' => $request->name 
-            ]);
-        }
-
-        return redirect()->route('admin.customers.index')->with('success', 'Data pelanggan dan akun login berhasil diperbarui sinkron.');
+        return redirect()->route('admin.customers.index')->with('success', 'Data pelanggan dan akun login berhasil diperbarui.');
     }
 
-    // Hapus Pelanggan beserta Akun Login-nya, dengan Penanganan Error jika Masih Ada Kendaraan Terkait
+    // Hapus Pelanggan
     public function destroy($id)
     {
         try {
             // 1. Cari data profil pelanggan
             $customer = Customer::findOrFail($id);
             
-            // 2. Ambil ID akun user (tabel users) miliknya
-            $userId = $customer->user_id;
-
-            // 3. Hapus profil pelanggannya (Tabel customers)
+            // 2. Hapus profil pelanggannya (Ini otomatis menghapus hak akses loginnya juga)
             $customer->delete();
-
-            // 4. Hapus akun loginnya (Tabel users)
-            if ($userId) {
-                \App\Models\User::where('id', $userId)->delete();
-            }
+            
+            // Logika penghapusan ke tabel Users DIHAPUS karena sudah pisah rumah!
 
             return redirect()->back()->with('success', 'Akun pelanggan dan data login berhasil dihapus total!');
 

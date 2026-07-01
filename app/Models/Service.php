@@ -15,10 +15,7 @@ class Service extends Model
         'service_cost', 
         'total_cost', 
         'notes',
-        'historical_customer_name',
-        'historical_customer_phone',
-        'historical_license_plate',
-        'historical_vehicle_motor'
+        'historical_customer_phone' // Jika ini tidak disuruh hapus, biarkan saja. Jika disuruh hapus, silakan hapus baris ini.
     ];
 
     public function vehicle()

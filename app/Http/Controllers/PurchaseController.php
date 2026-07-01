@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Purchase;
 use App\Models\PurchaseDetail;
 use App\Models\Sparepart;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
 {
+    // Menampilkan riwayat transaksi pembelian dengan filter
     public function index(Request $request)
     {
         $query = Purchase::query();
@@ -31,7 +33,7 @@ class PurchaseController extends Controller
 
         $purchases = $query->orderBy('purchase_date', 'desc')->orderBy('id', 'desc')->paginate(10);
 
-        // Array untuk menampilkan nama bulan
+        // Array untuk menampilkan nama bulan di dropdown filter
         $months = [
             '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
             '04' => 'April', '05' => 'Mei', '06' => 'Juni',
@@ -52,16 +54,18 @@ class PurchaseController extends Controller
         return view('admin.purchases.index', compact('purchases', 'months', 'years'));
     }
 
+    // Menampilkan form input nota pembelian baru
     public function create() 
     {
-        $spareparts = Sparepart::all(); 
-        
-        // Array untuk kategori suku cadang yang akan digunakan di form tambah pembelian
-        $categories = ['Oli', 'Shockbreaker', 'Roller', 'Vanbelt', 'Busi', 'Sistem Rem', 'Ban', 'Air Radiator', 'Handgrip', 'Lainnya'];
-        
+        $spareparts = Sparepart::with('category')->orderBy('stock', 'asc')->get();
+
+        // Ambil semua daftar kategori dari tabel categories untuk menu dropdown
+        $categories = Category::distinct()->pluck('name')->filter()->toArray();
+
         return view('admin.purchases.create', compact('spareparts', 'categories'));
     }
 
+    // Menyimpan nota pembelian beserta rincian barangnya
     public function store(Request $request)
     {
         $request->validate([
@@ -82,7 +86,6 @@ class PurchaseController extends Controller
 
             foreach ($request->items as $index => $item) {
                 $sparepartId = null;
-                $snapshotName = '';
 
                 $qty = (int) str_replace('.', '', $item['quantity']);
                 $price = (int) str_replace('.', '', $item['price']); 
@@ -95,25 +98,32 @@ class PurchaseController extends Controller
                     throw new \Exception("Harga Beli (Modal) pada baris ke-" . ($index + 1) . " tidak boleh 0.");
                 }
 
+                // JIKA INPUT BARANG BARU
                 if ($item['mode'] === 'new') {
-                    // Cek juga apakah kategori dipilih
-                    if (empty($item['new_name']) || empty($item['selling_price']) || empty($item['new_category'])) {
-                        throw new \Exception("Nama Barang, Kategori, dan Harga Jual pada baris ke-" . ($index + 1) . " wajib diisi.");
+                    if (empty($item['new_code']) || empty($item['new_name']) || empty($item['brand']) || empty($item['selling_price']) || (empty($item['new_category']) && empty($item['custom_category']))) {
+                        throw new \Exception("Kode Barang, Nama Barang, Merek, Kategori, dan Harga Jual pada baris ke-" . ($index + 1) . " wajib diisi.");
                     }
 
+                    // Validasi kategori kustom langsung ke tabel Category
+                    if (!empty($item['custom_category'])) {
+                        $inputKategoriBaru = trim($item['custom_category']);
+                        
+                        $kategoriSudahAda = Category::whereRaw('LOWER(name) = ?', [strtolower($inputKategoriBaru)])->exists();
+                        
+                        if ($kategoriSudahAda) {
+                            throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Kategori '{$inputKategoriBaru}' sebenarnya sudah terdaftar di sistem. Silakan hapus/kosongkan teks kategori tersebut dan pilih langsung dari menu Dropdown yang tersedia.");
+                        }
+                    }
 
+                    $kodeBarangBaru = trim($item['new_code']);
+                    if (Sparepart::where('code', $kodeBarangBaru)->exists()) {
+                        throw new \Exception("Gagal: Kode Barang '{$kodeBarangBaru}' pada baris ke-" . ($index + 1) . " sudah terdaftar di sistem.");
+                    }
 
-                    // Untuk mencegah duplikasi barang baru yang sangat mirip dengan barang lama.
                     $namaBarangBaru = trim($item['new_name']); 
-                    $cekDuplikat = null;
-                    
-                    // Pengecekan sama persis
                     $cekDuplikat = Sparepart::where('name', $namaBarangBaru)->first();
 
-                    // Pengecekan Kata per Kata
                     if (!$cekDuplikat) {
-                        
-                        // Fungsi memecah nama jadi kata-kata (tanpa simbol)
                         $normalizeToWords = function($str) {
                             $str = str_replace(['-', '.', '\''], '', strtolower($str)); 
                             $words = preg_split('/[^a-z0-9]/', $str, -1, PREG_SPLIT_NO_EMPTY);
@@ -122,42 +132,30 @@ class PurchaseController extends Controller
 
                         $newWords = $normalizeToWords($namaBarangBaru);
                         
-                        // Jika nama baru tidak memiliki kata sama sekali, lewati pengecekan kata per kata
                         if (count($newWords) > 0) {
                             $allSpareparts = Sparepart::select('id', 'name')->get();
                             
-                            // Bandingkan kata per kata dengan semua sparepart yang ada
                             foreach($allSpareparts as $sp) {
                                 $existingWords = $normalizeToWords($sp->name);
-                                
-                                // Lewati jika data lama tidak ada huruf/angkanya
                                 if (count($existingWords) === 0) continue;
                                 
-                                // Tentukan array mana yang jumlah katanya lebih sedikit / lebih banyak
                                 $shorter = count($newWords) < count($existingWords) ? $newWords : $existingWords;
                                 $longer = count($newWords) < count($existingWords) ? $existingWords : $newWords;
-                                
                                 $matchedWords = 0;
 
-                                // Cek setiap kata di array yang lebih pendek
                                 foreach ($shorter as $shortWord) {
                                     $bestMatchPercent = 0;
-                                    
-                                    // Bandingkan dengan seluruh kata di array yang lebih panjang
                                     foreach ($longer as $longWord) {
                                         similar_text($shortWord, $longWord, $percent);
                                         if ($percent > $bestMatchPercent) {
                                             $bestMatchPercent = $percent;
                                         }
                                     }
-                                    
-                                    // Jika kata ini memiliki kemiripan >= 80%, anggap ini kata yang sama
                                     if ($bestMatchPercent >= 80) {
                                         $matchedWords++;
                                     }
                                 }
                                 
-                                // Jika seluruh kata di array yang lebih pendek berhasil "ditemukan" kemiripannya
                                 if ($matchedWords === count($shorter)) {
                                     $cekDuplikat = $sp;
                                     break;
@@ -167,9 +165,8 @@ class PurchaseController extends Controller
                     }
 
                     if ($cekDuplikat) {
-                        throw new \Exception("Gagal: Barang yang Anda masukkan sangat identik/terkandung dalam '{$cekDuplikat->name}' yang sudah ada! Silakan gunakan mode 'Barang Lama'. Jika ini barang berbeda, ubah nama agar lebih spesifik (misal: tambah kode barang).");
+                        throw new \Exception("Gagal: Barang yang Anda masukkan sangat identik/terkandung dalam '{$cekDuplikat->name}' yang sudah ada! Silakan gunakan mode 'Barang Lama'.");
                     }
-                    // ---------------------------------------------------
 
                     $sellingPrice = (int) str_replace('.', '', $item['selling_price']); 
 
@@ -177,23 +174,30 @@ class PurchaseController extends Controller
                         throw new \Exception("Harga Jual pada baris ke-" . ($index + 1) . " tidak boleh 0.");
                     }
 
-                    if ($sellingPrice < $price) {
-                        throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Harga Jual (Rp " . number_format($sellingPrice, 0, ',', '.') . ") tidak boleh lebih kecil dari Harga Modal/Beli (Rp " . number_format($price, 0, ',', '.') . ").");
+                    if ($sellingPrice <= $price) {
+                        throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Harga Jual (Rp " . number_format($sellingPrice, 0, ',', '.') . ") tidak boleh lebih kecil atau sama dengan Harga Modal/Beli (Rp " . number_format($price, 0, ',', '.') . ").");
                     }
 
+                    $kategoriFinal = !empty($item['custom_category']) ? trim($item['custom_category']) : $item['new_category'];
 
-                    // Menyimpan data kategori yang dipilih admin
+                    // 1. CARI ATAU BUAT KATEGORI BARU DI TABEL CATEGORIES
+                    $category = Category::firstOrCreate([
+                        'name' => $kategoriFinal
+                    ]);
+
+                    // 2. SIMPAN BARANG DENGAN CATEGORY_ID
                     $newSparepart = Sparepart::create([
-                        'name' => $namaBarangBaru,
-                        'brand'    => $item['brand'] ?? null,
-                        'category' => $item['new_category'], 
-                        'price' => $sellingPrice,
-                        'stock' => $qty,
+                        'code'        => $kodeBarangBaru,
+                        'name'        => $namaBarangBaru,
+                        'brand'       => trim($item['brand']),
+                        'category_id' => $category->id,
+                        'price'       => $sellingPrice,
+                        'stock'       => $qty,
                     ]);
                     
                     $sparepartId = $newSparepart->id;
-                    $snapshotName = $newSparepart->name; 
 
+                // JIKA INPUT BARANG LAMA
                 } else {
                     if (empty($item['sparepart_id'])) {
                         throw new \Exception("Suku cadang pada baris ke-" . ($index + 1) . " belum dipilih.");
@@ -202,29 +206,24 @@ class PurchaseController extends Controller
                     $sparepartId = $item['sparepart_id'];
                     $sparepart = Sparepart::findOrFail($sparepartId);
 
-                    // Harga beli tidak boleh melebihi harga jual saat ini
-                    if ($price > $sparepart->price) {
+                    if ($price >= $sparepart->price) {
                         throw new \Exception("Gagal pada baris ke-" . ($index + 1) . ": Harga Beli/Modal (Rp " . number_format($price, 0, ',', '.') . ") tidak boleh melebihi Harga Jual saat ini (Rp " . number_format($sparepart->price, 0, ',', '.') . ").");
                     }
 
                     $sparepart->increment('stock', $qty);
-                    $snapshotName = $sparepart->name;
-
-                    $sparepart->increment('stock', $qty);
-                    $snapshotName = $sparepart->name; 
                 }
 
                 $subtotal = $qty * $price;
                 $grandTotal += $subtotal;
 
+                // Simpan ke rincian pembelian tanpa historical_name
                 PurchaseDetail::create([
-                    'purchase_id' => $purchase->id,
-                    'sparepart_id' => $sparepartId,
-                    'historical_name' => $snapshotName,   
-                    'historical_price' => $price,         
-                    'quantity' => $qty,
-                    'price' => $price, 
-                    'subtotal' => $subtotal
+                    'purchase_id'      => $purchase->id,
+                    'sparepart_id'     => $sparepartId,
+                    'historical_price' => $price,
+                    'quantity'         => $qty,
+                    'price'            => $price, 
+                    'subtotal'         => $subtotal
                 ]);
             }
 
@@ -242,7 +241,7 @@ class PurchaseController extends Controller
     // Menampilkan detail pembelian
     public function show($id)
     {
-        $purchase = Purchase::with('details.sparepart')->findOrFail($id);
+        $purchase = Purchase::with('details.sparepart.category')->findOrFail($id);
         return view('admin.purchases.show', compact('purchase'));
     }
 

@@ -32,7 +32,6 @@ class User extends Authenticatable
         ];
     }
 
-    // 👇 TAMBAHKAN BLOK KODE INI DI SINI 👇
     /**
      * Relasi User ke Customer (1 User = 1 Customer)
      */

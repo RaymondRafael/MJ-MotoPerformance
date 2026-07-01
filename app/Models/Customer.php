@@ -2,20 +2,31 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+// WAJIB DITAMBAHKAN AGAR BISA LOGIN (MULTI-AUTH)
+use Illuminate\Foundation\Auth\User as Authenticatable; 
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Customer extends Model
+class Customer extends Authenticatable
 {
-    // 1. $fillable yang lama ditimpa dengan yang baru ini
-    protected $fillable = ['user_id', 'name', 'phone_number', 'address'];
+    use HasApiTokens, Notifiable;
 
-    // 2. Tambahkan relasi ke tabel User
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // 1. $fillable disesuaikan dengan struktur tabel terbaru (tanpa user_id)
+    protected $fillable = [
+        'name', 
+        'phone_number', 
+        'address',
+        'email',      // Tambahan baru untuk login
+        'password'    // Tambahan baru untuk login
+    ];
 
-    // 3. Relasi ke kendaraan (yang lama) tetap dibiarkan
+    // 2. Wajib ditambahkan untuk menyembunyikan password di respon API
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    // 3. Relasi ke kendaraan TETAP DIBIARKAN agar riwayat servis aman
     public function vehicles()
     {
         return $this->hasMany(Vehicle::class);

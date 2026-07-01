@@ -38,7 +38,7 @@ class PasswordResetController extends Controller
         // 2. LANGSUNG ARAHKAN KE RUTE FORM WEB (Menghilangkan rute jembatan mobile)
         $resetUrl = url("/reset-password/{$token}?email=" . urlencode($user->email));
 
-        // 3. Kirim email menggunakan inline HTML murni (Menghindari error missing views)
+        // 3. Kirim email 
         try {
             Mail::send([], [], function ($message) use ($user, $resetUrl) {
                 $message->to($user->email)
@@ -66,7 +66,7 @@ class PasswordResetController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            // Jika ada masalah koneksi mailer/SMTP, kirim info dalam format JSON, bukan HTML
+            // Jika ada masalah koneksi mailer/SMTP
             return response()->json([
                 'success' => false,
                 'message' => 'Sistem gagal memicu email server. Detail internal: ' . $e->getMessage()

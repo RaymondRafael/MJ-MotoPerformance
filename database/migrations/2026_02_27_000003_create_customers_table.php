@@ -13,10 +13,15 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            // Relasi user_id DIHAPUS
             $table->string('name');
             $table->string('phone_number')->unique();
             $table->text('address')->nullable();
+            
+            // KOLOM BARU UNTUK AUTENTIKASI MOBILE
+            $table->string('email')->unique();
+            $table->string('password');
+            
             $table->timestamps();
         });
     }

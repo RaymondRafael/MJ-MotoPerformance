@@ -40,6 +40,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Guard untuk Pelanggan di Website
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+        ],
+
+        // Guard khusus untuk API Mobile (Pelanggan)
+        'customer-api' => [
+            'driver' => 'sanctum', 
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -65,10 +77,11 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        // TAMBAHAN: Provider untuk memberitahu Laravel di mana model Customer berada
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Customer::class,
+        ],
     ],
 
     /*
@@ -93,7 +106,14 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        'customers' => [
+            'provider' => 'customers',
+            'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

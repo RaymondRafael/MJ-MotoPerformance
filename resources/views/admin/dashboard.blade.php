@@ -152,8 +152,15 @@
                 @forelse($antreanTerbaru as $antrean)
                 <tr class="hover:bg-gray-50 transition">
                     <td class="p-4 text-gray-500">{{ $antrean->created_at->diffForHumans() }}</td>
-                    <td class="p-4 font-black text-gray-900 tracking-wider">{{ $antrean->vehicle->license_plate }}</td>
-                    <td class="p-4 font-bold">{{ $antrean->vehicle->customer->name }}</td>
+                    
+                    <td class="p-4 font-black text-gray-900 tracking-wider">
+                        {{ $antrean->historical_license_plate ?? ($antrean->vehicle->license_plate ?? '-') }}
+                    </td>
+                    
+                    <td class="p-4 font-bold">
+                        {{ $antrean->historical_customer_name ?? ($antrean->vehicle->customer->name ?? 'Pelanggan') }}
+                    </td>
+                    
                     <td class="p-4">
                         @if($antrean->status == 'pending')
                             <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold uppercase"><i class="fas fa-clock mr-1"></i> Antrean</span>

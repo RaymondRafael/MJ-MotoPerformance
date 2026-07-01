@@ -31,7 +31,7 @@ return new class extends Migration
             $table->foreign('sparepart_id')->references('id')->on('spareparts')->onDelete('set null');
             
             // 3. Kolom Snapshot (Disarankan nullable sebagai jaring pengaman tambahan)
-            $table->string('historical_name')->nullable(); 
+            // $table->string('historical_name')->nullable(); 
             $table->integer('historical_price')->nullable();
             
             // 4. Kolom Transaksi Standar (INI YANG SEBELUMNYA HILANG)

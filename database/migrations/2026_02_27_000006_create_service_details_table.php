@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreign('sparepart_id')->references('id')->on('spareparts')->onDelete('set null');
             
             // 2. Tambahkan kolom perekam jejak (Snapshot)
-            $table->string('historical_name')->nullable(); // Nama barang saat diservis
+            // $table->string('historical_name')->nullable(); // Nama barang saat diservis
             
             $table->integer('quantity');
             $table->integer('price');

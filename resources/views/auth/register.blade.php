@@ -57,7 +57,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('register.submit') }}" method="POST" class="space-y-6">
+            <form action="{{ url('/register') }}" method="POST" class="space-y-6">
                 @csrf
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
